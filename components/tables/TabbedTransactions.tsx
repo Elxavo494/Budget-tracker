@@ -249,14 +249,19 @@ export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
             </h3>
             <div className="flex items-center gap-2 flex-wrap">
               {transaction.subtype === 'recurring' && (
-                <Badge variant="secondary" className="text-xs px-2 py-1 rounded-full">
+                <Badge variant="outline" className="text-xs px-1.5 py-0.5 rounded-md border font-normal text-gray-600 dark:text-gray-400">
                   {transaction.recurrence}
                 </Badge>
               )}
               {transaction.categoryId && (
                 <Badge 
-                  style={{ backgroundColor: getCategoryColor(transaction.categoryId) }}
-                  className="text-white text-xs px-2 py-1 rounded-full"
+                  variant="outline"
+                  style={{ 
+                    borderColor: getCategoryColor(transaction.categoryId),
+                    color: getCategoryColor(transaction.categoryId),
+                    backgroundColor: `${getCategoryColor(transaction.categoryId)}10`
+                  }}
+                  className="text-xs px-1.5 py-0.5 rounded-md border font-normal"
                 >
                   {getCategoryName(transaction.categoryId)}
                 </Badge>
@@ -267,6 +272,9 @@ export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
             {transaction.subtype === 'recurring' 
               ? `Since ${format(new Date(transaction.startDate!), 'MMM yyyy')}`
               : format(new Date(transaction.date), 'MMM dd')}
+            <span className="text-xs text-gray-400 dark:text-gray-500 font-light ml-1">
+              / {transaction.subtype === 'recurring' ? transaction.recurrence : 'one-time'}
+            </span>
           </p>
         </div>
 
@@ -274,9 +282,6 @@ export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
         <div className="flex flex-col items-end gap-2">
           <p className={`font-bold text-sm sm:text-base ${isIncome ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
             {isIncome ? '+' : ''}{formatCurrency(transaction.amount)}
-          </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            {transaction.subtype === 'recurring' ? transaction.recurrence : 'monthly'}
           </p>
           
           {/* Action buttons */}
@@ -319,7 +324,7 @@ export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
     if (activeTab === 'income') {
       return (
         <UnifiedIncomeForm>
-          <Button size="sm" className="gap-2 bg-green-600 hover:bg-green-700 text-white">
+          <Button variant="income" size="sm" className="gap-2 rounded-full">
             <Plus className="h-4 w-4" />
             <span className="hidden sm:inline">Add Income</span>
           </Button>
@@ -328,7 +333,7 @@ export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
     } else if (activeTab === 'spendings') {
       return (
         <UnifiedExpenseForm>
-          <Button size="sm" className="gap-2 bg-red-600 hover:bg-red-700 text-white">
+          <Button variant="expense" size="sm" className="gap-2 rounded-full">
             <Plus className="h-4 w-4" />
             <span className="hidden sm:inline">Add Expense</span>
           </Button>
@@ -338,7 +343,7 @@ export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
       // All tab - show both options in a dropdown or default to expense
       return (
         <UnifiedExpenseForm>
-          <Button size="sm" className="gap-2">
+          <Button size="sm" className="gap-2 rounded-full">
             <Plus className="h-4 w-4" />
             <span className="hidden sm:inline">Add</span>
           </Button>

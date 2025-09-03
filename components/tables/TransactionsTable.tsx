@@ -245,8 +245,13 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
                                   {formatCurrency(expense.amount)} • {format(new Date(expense.date), 'MMM dd, yyyy')}
                                 </div>
                                 <Badge 
-                                  style={{ backgroundColor: getCategoryColor(expense.categoryId) }}
-                                  className="text-white text-xs px-1.5 py-0.5 rounded-full w-fit"
+                                  variant="outline"
+                                  style={{ 
+                                    borderColor: getCategoryColor(expense.categoryId),
+                                    color: getCategoryColor(expense.categoryId),
+                                    backgroundColor: `${getCategoryColor(expense.categoryId)}10`
+                                  }}
+                                  className="text-xs px-1.5 py-0.5 rounded-md border font-normal w-fit"
                                 >
                                   {getCategoryName(expense.categoryId)}
                                 </Badge>
@@ -506,8 +511,13 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
                           {expense.endDate && ` until ${format(new Date(expense.endDate), 'MMM yyyy')}`}
                               </div>
                           <Badge 
-                            style={{ backgroundColor: getCategoryColor(expense.categoryId) }}
-                            className="text-white text-xs px-1.5 py-0.5 rounded-full w-fit"
+                            variant="outline"
+                            style={{ 
+                              borderColor: getCategoryColor(expense.categoryId),
+                              color: getCategoryColor(expense.categoryId),
+                              backgroundColor: `${getCategoryColor(expense.categoryId)}10`
+                            }}
+                            className="text-xs px-1.5 py-0.5 rounded-md border font-normal w-fit"
                           >
                             {getCategoryName(expense.categoryId)}
                           </Badge>

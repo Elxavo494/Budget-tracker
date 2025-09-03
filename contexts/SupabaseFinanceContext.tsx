@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { supabase } from '@/lib/supabase';
@@ -53,38 +53,22 @@ export const SupabaseFinanceProvider: React.FC<{ children: React.ReactNode }> = 
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const isLoadingRef = useRef(false);
 
-  // Load all data when user is authenticated
-  useEffect(() => {
-    if (authLoading) return;
-    
-    if (!isSupabaseConfigured) {
-      setLoading(false);
-      return;
-    }
-    
-    if (user) {
-      loadAllData();
-    } else {
-      setData({
-        categories: [],
-        recurringIncomes: [],
-        recurringExpenses: [],
-        oneTimeIncomes: [],
-        oneTimeExpenses: [],
-      });
-      setLoading(false);
-    }
-  }, [user, authLoading, isSupabaseConfigured]);
-
-  const loadAllData = async () => {
+  const loadAllData = useCallback(async () => {
     if (!supabase) {
       setError('Supabase is not configured');
       setLoading(false);
       return;
     }
 
+    // Prevent multiple simultaneous calls
+    if (isLoadingRef.current) {
+      return;
+    }
+
     try {
+      isLoadingRef.current = true;
       setLoading(true);
       setError(null);
 
@@ -212,9 +196,33 @@ export const SupabaseFinanceProvider: React.FC<{ children: React.ReactNode }> = 
     } catch (err: any) {
       setError(err.message);
     } finally {
+      isLoadingRef.current = false;
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  // Load all data when user is authenticated
+  useEffect(() => {
+    if (authLoading) return;
+    
+    if (!isSupabaseConfigured) {
+      setLoading(false);
+      return;
+    }
+    
+    if (user) {
+      loadAllData();
+    } else {
+      setData({
+        categories: [],
+        recurringIncomes: [],
+        recurringExpenses: [],
+        oneTimeIncomes: [],
+        oneTimeExpenses: [],
+      });
+      setLoading(false);
+    }
+  }, [user, authLoading, isSupabaseConfigured, loadAllData]);
 
   // Category operations
   const addCategory = async (category: Omit<Category, 'id'>) => {
