@@ -33,24 +33,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const isSupabaseConfigured = !!supabase;
 
   const loadProfile = async (userId: string) => {
-    if (!supabase) return;
+    console.log('👤 AuthProvider: Loading profile for user:', userId);
+    
+    if (!supabase) {
+      console.log('👤 AuthProvider: No Supabase client for profile loading');
+      return;
+    }
 
     try {
+      const startTime = Date.now();
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
+      
+      const duration = Date.now() - startTime;
+      console.log('👤 AuthProvider: Profile query response', { 
+        data: !!data, 
+        error: error?.code || error?.message,
+        duration: `${duration}ms` 
+      });
 
       if (error && error.code !== 'PGRST116') {
         // PGRST116 is "not found" error
-        console.error('Error loading profile:', error);
+        console.error('👤 AuthProvider: Error loading profile:', error);
         return;
       }
 
       if (data) {
+        console.log('👤 AuthProvider: Profile data loaded successfully');
         setProfile(data);
       } else {
+        console.log('👤 AuthProvider: No profile found, creating default profile');
         // Create default profile if it doesn't exist
         const newProfile = {
           id: userId,
@@ -61,7 +76,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setProfile(newProfile);
       }
     } catch (error) {
-      console.error('Error loading profile:', error);
+      console.error('👤 AuthProvider: Exception loading profile:', error);
     }
   };
 
@@ -72,7 +87,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
+    console.log('🔐 AuthProvider: Initializing...', { supabase: !!supabase });
+    
     if (!supabase) {
+      console.log('🔐 AuthProvider: No Supabase client, setting loading false');
       setLoading(false);
       return;
     }
@@ -82,23 +100,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Get initial session
     const initializeAuth = async () => {
       try {
+        console.log('🔐 AuthProvider: Getting initial session...');
         if (!supabase) return;
-        const { data: { session } } = await supabase.auth.getSession();
         
-        if (!mounted) return;
+        const startTime = Date.now();
+        const { data: { session }, error } = await supabase.auth.getSession();
+        const duration = Date.now() - startTime;
+        
+        console.log('🔐 AuthProvider: Session response received', { 
+          session: !!session, 
+          user: !!session?.user,
+          duration: `${duration}ms`,
+          error: error?.message 
+        });
+        
+        if (!mounted) {
+          console.log('🔐 AuthProvider: Component unmounted, skipping session update');
+          return;
+        }
         
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
+          console.log('🔐 AuthProvider: Loading profile for user:', session.user.id);
           await loadProfile(session.user.id);
+        } else {
+          console.log('🔐 AuthProvider: No user session found');
         }
         
         if (mounted) {
+          console.log('🔐 AuthProvider: Setting loading to false (initialization complete)');
           setLoading(false);
         }
       } catch (error) {
-        console.error('Error initializing auth:', error);
+        console.error('🔐 AuthProvider: Error initializing auth:', error);
         if (mounted) {
           setLoading(false);
         }
@@ -108,12 +144,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('🔐 AuthProvider: Auth state changed', { 
+          event, 
+          session: !!session, 
+          user: !!session?.user,
+          mounted 
+        });
+        
         if (!mounted) return;
         
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
+          console.log('🔐 AuthProvider: Loading profile for user (auth change):', session.user.id);
           await loadProfile(session.user.id);
           
           // Clear any old finance data from localStorage to prevent conflicts
@@ -121,19 +165,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             localStorage.removeItem('finance-tracker-data');
           }
         } else {
+          console.log('🔐 AuthProvider: No user in auth change, clearing profile');
           setProfile(null);
         }
         
         // Only set loading to false if this is not the initial load
         if (event !== 'INITIAL_SESSION' && mounted) {
+          console.log('🔐 AuthProvider: Setting loading to false (auth change complete)');
           setLoading(false);
         }
       }
     );
 
+    console.log('🔐 AuthProvider: Starting auth initialization...');
     initializeAuth();
 
     return () => {
+      console.log('🔐 AuthProvider: Cleanup - unmounting');
       mounted = false;
       subscription.unsubscribe();
     };

@@ -34,8 +34,17 @@ import { generateSpendingInsights } from '@/lib/spending-insights';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 
 export const Dashboard: React.FC = () => {
-  const { user, isSupabaseConfigured } = useAuth();
+  const { user, isSupabaseConfigured, loading: authLoading } = useAuth();
   const { data, loading, error } = useSupabaseFinance();
+  
+  console.log('📊 Dashboard: Render state', {
+    user: !!user,
+    authLoading,
+    financeLoading: loading,
+    isSupabaseConfigured,
+    error: !!error,
+    timestamp: new Date().toISOString()
+  });
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
