@@ -2,7 +2,7 @@
   "name": "Finance Tracker - Personal Budget Manager",
   "short_name": "Finance Tracker",
   "description": "Track your recurring and one-time income and expenses with beautiful charts and insights.",
-  "start_url": "/",
+  "start_url": "/?v=2025-01-16",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#3b82f6",

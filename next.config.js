@@ -5,6 +5,19 @@ const withPWA = require('next-pwa')({
   skipWaiting: true,
   runtimeCaching: [
     {
+      // Cache API calls with NetworkFirst strategy
+      urlPattern: /^https:\/\/.*\.supabase\.co\/.*$/,
+      handler: 'NetworkFirst',
+      options: {
+        cacheName: 'supabase-api',
+        expiration: {
+          maxEntries: 100,
+          maxAgeSeconds: 5 * 60, // 5 minutes for API calls
+        },
+      },
+    },
+    {
+      // Cache static assets
       urlPattern: /^https?.*/,
       handler: 'NetworkFirst',
       options: {
