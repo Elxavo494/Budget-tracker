@@ -97,6 +97,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         if (session?.user) {
           await loadProfile(session.user.id);
+          
+          // Clear old finance data from localStorage when user logs in
+          // This prevents conflicts between old local data and new Supabase data
+          if (typeof window !== 'undefined' && localStorage.getItem('finance-tracker-data')) {
+            console.log('Clearing old localStorage finance data to prevent conflicts');
+            localStorage.removeItem('finance-tracker-data');
+          }
         } else {
           setProfile(null);
         }
@@ -139,6 +146,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!supabase) throw new Error('Supabase is not configured');
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
+    
+    // Clear any remaining localStorage data on sign out to prevent conflicts
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('finance-tracker-data');
+    }
   };
 
   return (
