@@ -243,17 +243,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (session?.user) {
           console.log('🔐 AuthProvider: Loading profile for user:', session.user.id);
           try {
-            await loadProfile(session.user.id);
+            // Run profile load in background; do not block auth loading
+            void loadProfile(session.user.id);
           } catch (error) {
-            console.error('🔐 AuthProvider: Profile loading failed in initialization:', error);
-            // If profile loading fails with a valid session, it might be a token issue
-            if (error instanceof Error && error.message.includes('timeout')) {
-              console.warn('🔐 AuthProvider: Profile timeout suggests stale token, clearing auth');
-              await clearStaleAuth();
-              setSession(null);
-              setUser(null);
-              setProfile(null);
-            }
+            console.error('🔐 AuthProvider: Profile loading failed in initialization (non-blocking):', error);
           }
         } else {
           console.log('🔐 AuthProvider: No user session found');
@@ -299,9 +292,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (session?.user) {
           console.log('🔐 AuthProvider: Loading profile for user (auth change):', session.user.id);
           try {
-            await loadProfile(session.user.id);
+            // Run profile load in background; do not block auth loading
+            void loadProfile(session.user.id);
           } catch (error) {
-            console.error('🔐 AuthProvider: Profile loading failed in auth change:', error);
+            console.error('🔐 AuthProvider: Profile loading failed in auth change (non-blocking):', error);
           }
           
           // Clear any old finance data from localStorage to prevent conflicts
@@ -324,11 +318,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     console.log('🔐 AuthProvider: Starting auth initialization...');
     initializeAuth();
 
-    // Safety timeout - force loading to false after 15 seconds (reduced since we handle stale tokens)
+    // Safety timeout - force loading to false after 15 seconds
     const safetyTimeout = setTimeout(() => {
       if (mounted && loading) {
         console.warn('🔐 AuthProvider: Safety timeout triggered - forcing loading to false after 15s');
-        clearStaleAuth();
         setLoading(false);
       }
     }, 15000);
