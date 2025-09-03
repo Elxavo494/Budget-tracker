@@ -97,7 +97,7 @@ export const DataImporter: React.FC = () => {
       const categoryMapping: { [oldId: string]: string } = {};
 
       // 1. Import Categories (skip existing ones)
-      console.log('Importing categories...');
+      
       for (const category of localData.categories) {
         try {
           // Check if category already exists by name
@@ -106,7 +106,7 @@ export const DataImporter: React.FC = () => {
           if (existingCategory) {
             // Use existing category
             categoryMapping[category.id] = existingCategory.id;
-            console.log(`Category "${category.name}" already exists, using existing ID`);
+            
           } else {
             // Create new category
             await addCategory({

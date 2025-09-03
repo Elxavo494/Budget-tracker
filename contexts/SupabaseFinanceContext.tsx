@@ -56,30 +56,20 @@ export const SupabaseFinanceProvider: React.FC<{ children: React.ReactNode }> = 
 
   // Load all data when user is authenticated
   useEffect(() => {
-    console.log('💰 SupabaseFinanceContext: Effect triggered', { 
-      authLoading, 
-      isSupabaseConfigured, 
-      user: !!user,
-      userId: user?.id 
-    });
     
     if (authLoading) {
-      console.log('💰 SupabaseFinanceContext: Auth still loading, setting finance loading to true');
       setLoading(true);
       return;
     }
     
     if (!isSupabaseConfigured) {
-      console.log('💰 SupabaseFinanceContext: Supabase not configured, setting loading to false');
       setLoading(false);
       return;
     }
     
     if (user) {
-      console.log('💰 SupabaseFinanceContext: User authenticated, loading financial data for:', user.id);
       loadAllData();
     } else {
-      console.log('💰 SupabaseFinanceContext: No user, clearing data and setting loading to false');
       setData({
         categories: [],
         recurringIncomes: [],
@@ -92,25 +82,18 @@ export const SupabaseFinanceProvider: React.FC<{ children: React.ReactNode }> = 
   }, [user, authLoading, isSupabaseConfigured]);
 
   const loadAllData = async () => {
-    console.log('💰 SupabaseFinanceContext: loadAllData called', { 
-      supabase: !!supabase, 
-      retryCount,
-      timestamp: new Date().toISOString() 
-    });
+    
     
     if (!supabase) {
-      console.error('💰 SupabaseFinanceContext: No Supabase client available');
       setError('Supabase is not configured');
       setLoading(false);
       return;
     }
 
     try {
-      console.log('💰 SupabaseFinanceContext: Setting loading to true and clearing errors');
       setLoading(true);
       setError(null);
 
-      console.log('💰 SupabaseFinanceContext: Starting data queries...');
       const startTime = Date.now();
 
       // Add timeout to prevent hanging
@@ -126,7 +109,6 @@ export const SupabaseFinanceProvider: React.FC<{ children: React.ReactNode }> = 
         setTimeout(() => reject(new Error('Data loading timeout after 15 seconds')), 15000)
       );
 
-      console.log('💰 SupabaseFinanceContext: Executing queries with 15s timeout...');
       const [
         categoriesResult,
         recurringIncomesResult,
@@ -135,41 +117,23 @@ export const SupabaseFinanceProvider: React.FC<{ children: React.ReactNode }> = 
         oneTimeExpensesResult,
       ] = await Promise.race([dataPromise, timeoutPromise]) as any;
 
-      const duration = Date.now() - startTime;
-      console.log('💰 SupabaseFinanceContext: All queries completed', { 
-        duration: `${duration}ms`,
-        results: {
-          categories: { count: categoriesResult.data?.length, error: !!categoriesResult.error },
-          recurringIncomes: { count: recurringIncomesResult.data?.length, error: !!recurringIncomesResult.error },
-          recurringExpenses: { count: recurringExpensesResult.data?.length, error: !!recurringExpensesResult.error },
-          oneTimeIncomes: { count: oneTimeIncomesResult.data?.length, error: !!oneTimeIncomesResult.error },
-          oneTimeExpenses: { count: oneTimeExpensesResult.data?.length, error: !!oneTimeExpensesResult.error }
-        }
-      });
 
       // Check for errors in individual queries
       if (categoriesResult.error) {
-        console.error('💰 SupabaseFinanceContext: Categories query error:', categoriesResult.error);
         throw categoriesResult.error;
       }
       if (recurringIncomesResult.error) {
-        console.error('💰 SupabaseFinanceContext: Recurring incomes query error:', recurringIncomesResult.error);
         throw recurringIncomesResult.error;
       }
       if (recurringExpensesResult.error) {
-        console.error('💰 SupabaseFinanceContext: Recurring expenses query error:', recurringExpensesResult.error);
         throw recurringExpensesResult.error;
       }
       if (oneTimeIncomesResult.error) {
-        console.error('💰 SupabaseFinanceContext: One-time incomes query error:', oneTimeIncomesResult.error);
         throw oneTimeIncomesResult.error;
       }
       if (oneTimeExpensesResult.error) {
-        console.error('💰 SupabaseFinanceContext: One-time expenses query error:', oneTimeExpensesResult.error);
         throw oneTimeExpensesResult.error;
       }
-
-      console.log('💰 SupabaseFinanceContext: All queries successful, processing data...');
 
       // Transform database results to match frontend types
       const transformRecurringIncomes = (dbIncomes: any[]) => 
@@ -228,22 +192,15 @@ export const SupabaseFinanceProvider: React.FC<{ children: React.ReactNode }> = 
 
       // If user has no categories, create default ones
       let categories = categoriesResult.data || [];
-      console.log('💰 SupabaseFinanceContext: Processing categories', { 
-        categoriesCount: categories.length,
-        needsDefaultCategories: categories.length === 0 && !!user
-      });
       
       if (categories.length === 0 && user) {
-        console.log('💰 SupabaseFinanceContext: Creating default categories for user:', user.id);
         try {
           // Try using the database function first
-          console.log('💰 SupabaseFinanceContext: Attempting to create default categories via RPC...');
           const { error: functionError } = await supabase.rpc('create_user_default_categories', {
             user_id: user.id
           });
           
           if (functionError) {
-            console.log('💰 SupabaseFinanceContext: RPC failed, using direct insert fallback:', functionError.message);
             // Fallback to direct insert
             const defaultCategories = [
               { name: 'Food', color: '#ef4444', user_id: user.id },
@@ -261,34 +218,23 @@ export const SupabaseFinanceProvider: React.FC<{ children: React.ReactNode }> = 
               .select();
               
             if (!insertError && newCategories) {
-              console.log('💰 SupabaseFinanceContext: Default categories created via direct insert:', newCategories.length);
               categories = newCategories;
             } else {
-              console.error('💰 SupabaseFinanceContext: Failed to create default categories via direct insert:', insertError);
+              // ignore
             }
           } else {
-            console.log('💰 SupabaseFinanceContext: Default categories created via RPC, refetching...');
             // Refetch categories after function call
             const { data: refetchedCategories } = await supabase
               .from('categories')
               .select('*')
               .order('name');
             categories = refetchedCategories || [];
-            console.log('💰 SupabaseFinanceContext: Refetched categories count:', categories.length);
           }
             
         } catch (error) {
-          console.error('💰 SupabaseFinanceContext: Error creating default categories:', error);
+          // ignore
         }
       }
-
-      console.log('💰 SupabaseFinanceContext: Setting final data state...', {
-        categories: categories.length,
-        recurringIncomes: (recurringIncomesResult.data || []).length,
-        recurringExpenses: (recurringExpensesResult.data || []).length,
-        oneTimeIncomes: (oneTimeIncomesResult.data || []).length,
-        oneTimeExpenses: (oneTimeExpensesResult.data || []).length,
-      });
 
       setData({
         categories,
@@ -300,25 +246,20 @@ export const SupabaseFinanceProvider: React.FC<{ children: React.ReactNode }> = 
       
       // Reset retry count on successful load
       setRetryCount(0);
-      console.log('💰 SupabaseFinanceContext: Data loading completed successfully');
     } catch (err: any) {
-      console.error('💰 SupabaseFinanceContext: Error loading finance data:', err);
       setError(err.message || 'Failed to load financial data');
       
       // Auto-retry on timeout or network errors (max 2 retries)
       if (retryCount < 2 && (err.message?.includes('timeout') || err.message?.includes('network'))) {
-        console.log(`💰 SupabaseFinanceContext: Retrying data load (attempt ${retryCount + 2}/3) due to:`, err.message);
         setRetryCount(prev => prev + 1);
         setTimeout(() => {
-          console.log(`💰 SupabaseFinanceContext: Executing retry ${retryCount + 2}/3...`);
           loadAllData();
         }, 2000);
         return;
       } else {
-        console.error('💰 SupabaseFinanceContext: Max retries reached or non-retryable error:', err.message);
+        // ignore
       }
     } finally {
-      console.log('💰 SupabaseFinanceContext: Setting loading to false (loadAllData complete)');
       setLoading(false);
     }
   };

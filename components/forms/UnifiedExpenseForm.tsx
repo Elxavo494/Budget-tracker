@@ -66,7 +66,7 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
     e.preventDefault();
     
     if (!recurringFormData.name || !recurringFormData.amount || !recurringFormData.categoryId || !recurringFormData.startDate) {
-      console.log('Form validation failed:', recurringFormData);
+      
       return;
     }
 
@@ -80,7 +80,7 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
         endDate: recurringFormData.endDate || undefined,
       };
 
-      console.log('Submitting recurring expense:', data);
+      
 
       if (recurringExpense) {
         await updateRecurringExpense({ 
@@ -106,7 +106,7 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
     e.preventDefault();
     
     if (!oneTimeFormData.name || !oneTimeFormData.amount || !oneTimeFormData.categoryId || !oneTimeFormData.date) {
-      console.log('Form validation failed:', oneTimeFormData);
+      
       return;
     }
 
@@ -118,7 +118,7 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
         date: oneTimeFormData.date,
       };
 
-      console.log('Submitting one-time expense:', data);
+      
 
       if (oneTimeExpense) {
         await updateOneTimeExpense({ 

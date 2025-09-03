@@ -229,7 +229,8 @@ export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
           ? data.oneTimeIncomes.find(i => i.id === transaction.id)
           : data.oneTimeExpenses.find(e => e.id === transaction.id));
 
-    const deleteType = `${transaction.subtype}-${transaction.type}`;
+    const normalizedSubtype = transaction.subtype === 'onetime' ? 'one-time' : transaction.subtype;
+    const deleteType = `${normalizedSubtype}-${transaction.type}`;
 
     return (
       <div

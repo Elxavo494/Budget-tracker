@@ -63,7 +63,7 @@ export const UnifiedIncomeForm: React.FC<UnifiedIncomeFormProps> = ({
     e.preventDefault();
     
     if (!recurringFormData.name || !recurringFormData.amount || !recurringFormData.startDate) {
-      console.log('Form validation failed:', recurringFormData);
+      
       return;
     }
 
@@ -76,7 +76,7 @@ export const UnifiedIncomeForm: React.FC<UnifiedIncomeFormProps> = ({
         endDate: recurringFormData.endDate || undefined,
       };
 
-      console.log('Submitting recurring income:', data);
+      
 
       if (recurringIncome) {
         await updateRecurringIncome({ 

@@ -3,11 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
-console.log('🔧 Supabase Configuration:', {
-  url: supabaseUrl ? `${supabaseUrl.slice(0, 20)}...` : 'MISSING',
-  key: supabaseAnonKey ? `${supabaseAnonKey.slice(0, 20)}...` : 'MISSING',
-  configured: !!(supabaseUrl && supabaseAnonKey)
-});
+// (logging removed)
 
 // Only create Supabase client if environment variables are provided
 export const supabase = supabaseUrl && supabaseAnonKey 
@@ -25,7 +21,7 @@ export const supabase = supabaseUrl && supabaseAnonKey
       // Add global fetch configuration
       global: {
         fetch: (url, options = {}) => {
-          console.log('🔧 Supabase: Making request to', url.toString().replace(supabaseUrl, '[SUPABASE_URL]'));
+          // (logging removed)
           
           // Create timeout signal with fallback for older browsers
           let timeoutSignal;
@@ -47,11 +43,7 @@ export const supabase = supabaseUrl && supabaseAnonKey
     })
   : null;
 
-if (supabase) {
-  console.log('🔧 Supabase client created successfully');
-} else {
-  console.error('🔧 Supabase client creation failed - missing environment variables');
-}
+// (logging removed)
 
 export type Database = {
   public: {
