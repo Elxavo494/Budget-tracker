@@ -14,7 +14,14 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { User, LogOut, ChevronDown, Moon, Sun } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useState, useEffect } from 'react';
+
+// Logo dimensions
+const LOGO_SIZES = {
+  normal: { width: 60, height: 30 },
+  scrolled: { width: 40, height: 20 }
+} as const;
 
 export const Header: React.FC = () => {
   const { user, signOut, profile } = useAuth();
@@ -51,17 +58,25 @@ export const Header: React.FC = () => {
         : 'gradient-background border-b border-border'
       }
     `}>
-      <div className={`max-w-[1680px] mx-auto mobile-padding transition-smooth ${isScrolled ? 'py-3' : 'py-6'}`}>
+      <div className={`max-w-[1680px] mx-auto mobile-padding transition-smooth ${isScrolled ? 'py-3' : 'py-4'}`}>
         <div className="flex justify-between items-center">
-          <div className="text-left flex-1 min-w-0">
-            <Link href="/">
-              <h1 className={`
-                font-bold text-foreground tracking-tight 
-                hover:text-primary transition-smooth cursor-pointer
-                ${isScrolled ? 'text-xl sm:text-2xl' : 'text-2xl sm:text-4xl'}
-              `}>
-                Finance Tracker
-              </h1>
+          <div className="flex items-center flex-1 min-w-0">
+            <Link 
+              href="/" 
+              className="inline-block hover:opacity-80 transition-opacity duration-200 ease-in-out"
+            >
+              <Image
+                src="/images/logo.png"
+                alt="Finance Tracker Logo"
+                width={LOGO_SIZES.normal.width}
+                height={LOGO_SIZES.normal.height}
+                className="object-contain transition-all duration-300 ease-in-out"
+                style={{
+                  width: isScrolled ? `${LOGO_SIZES.scrolled.width}px` : `${LOGO_SIZES.normal.width}px`,
+                  height: isScrolled ? `${LOGO_SIZES.scrolled.height}px` : `${LOGO_SIZES.normal.height}px`
+                }}
+                priority
+              />
             </Link>
           </div>
           <DropdownMenu>

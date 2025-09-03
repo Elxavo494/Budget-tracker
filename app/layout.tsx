@@ -22,7 +22,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <Providers>
           <Header />
-          <main className="pt-[88px]">
+          <main className="pt-[70px]">
             {children}
           </main>
           <Toaster

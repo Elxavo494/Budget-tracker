@@ -164,7 +164,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
                 <Card 
                   className={`bg-gradient-to-br ${colors.bg} h-full`}
                 >
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 sm:p-6">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4 pb-2 sm:p-6">
                     <CardTitle className={`text-sm font-medium ${colors.title}`}>
                       {card.title}
                     </CardTitle>

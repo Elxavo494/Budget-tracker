@@ -13,6 +13,9 @@ export interface RecurringIncome {
   recurrence: RecurrenceType;
   startDate: string;
   endDate?: string;
+  iconUrl?: string;
+  iconType?: 'custom' | 'preset';
+  presetIconId?: string;
   createdAt: string;
 }
 
@@ -24,6 +27,9 @@ export interface RecurringExpense {
   startDate: string;
   endDate?: string;
   categoryId: string;
+  iconUrl?: string;
+  iconType?: 'custom' | 'preset';
+  presetIconId?: string;
   createdAt: string;
 }
 
@@ -32,6 +38,9 @@ export interface OneTimeIncome {
   name: string;
   amount: number;
   date: string;
+  iconUrl?: string;
+  iconType?: 'custom' | 'preset';
+  presetIconId?: string;
   createdAt: string;
 }
 
@@ -41,6 +50,9 @@ export interface OneTimeExpense {
   amount: number;
   categoryId: string;
   date: string;
+  iconUrl?: string;
+  iconType?: 'custom' | 'preset';
+  presetIconId?: string;
   createdAt: string;
 }
 

@@ -18,6 +18,7 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, us
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { DraggableItem } from '@/components/ui/draggable-item';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
+import { presetIcons, getLogoUrl } from '@/lib/preset-icons';
 
 interface TransactionsTableProps {
   totalIncome: number;
@@ -486,7 +487,17 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
                     {filteredData.recurringExpenses.map((expense) => (
                       <DraggableItem key={expense.id} id={expense.id}>
                         <div className="flex items-center justify-between p-2.5 sm:p-3 bg-rose-50/50 dark:bg-rose-900/20 rounded-lg border border-rose-100 dark:border-rose-800 hover:bg-rose-50 dark:hover:bg-rose-900/30 transition-colors duration-200 w-full">
-                      <div className="flex-1">
+                      <div className="flex items-center gap-3 flex-1">
+                        {expense.imageUrl && (
+                          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden flex-shrink-0 border border-rose-200 dark:border-rose-700">
+                            <img 
+                              src={expense.imageUrl} 
+                              alt={expense.name}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        )}
+                        <div className="flex-1">
                             <div className="font-semibold text-slate-800 dark:text-slate-200 text-sm sm:text-base truncate pr-2">{expense.name}</div>
                             <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mt-1">
                               <div>
@@ -500,6 +511,7 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
                           >
                             {getCategoryName(expense.categoryId)}
                           </Badge>
+                        </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-0.5 sm:gap-1 ml-2">

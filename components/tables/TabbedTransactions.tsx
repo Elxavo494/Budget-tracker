@@ -12,6 +12,7 @@ import { format } from 'date-fns';
 import { UnifiedIncomeForm } from '@/components/forms/UnifiedIncomeForm';
 import { UnifiedExpenseForm } from '@/components/forms/UnifiedExpenseForm';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
+import { presetIcons, getLogoUrl } from '@/lib/preset-icons';
 import toast from 'react-hot-toast';
 
 interface TabbedTransactionsProps {
@@ -33,6 +34,9 @@ interface TransactionItem {
   recurrence?: string;
   startDate?: string;
   endDate?: string;
+  iconUrl?: string;
+  iconType?: 'custom' | 'preset';
+  presetIconId?: string;
 }
 
 export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
@@ -62,6 +66,9 @@ export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
         recurrence: income.recurrence,
         startDate: income.startDate,
         endDate: income.endDate,
+        iconUrl: income.iconUrl,
+        iconType: income.iconType,
+        presetIconId: income.presetIconId,
       });
     });
 
@@ -78,6 +85,9 @@ export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
         recurrence: expense.recurrence,
         startDate: expense.startDate,
         endDate: expense.endDate,
+        iconUrl: expense.iconUrl,
+        iconType: expense.iconType,
+        presetIconId: expense.presetIconId,
       });
     });
 
@@ -92,6 +102,9 @@ export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
           date: income.date,
           type: 'income',
           subtype: 'onetime',
+          iconUrl: income.iconUrl,
+          iconType: income.iconType,
+          presetIconId: income.presetIconId,
         });
       }
     });
@@ -108,6 +121,9 @@ export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
           type: 'expense',
           subtype: 'onetime',
           categoryId: expense.categoryId,
+          iconUrl: expense.iconUrl,
+          iconType: expense.iconType,
+          presetIconId: expense.presetIconId,
         });
       }
     });
@@ -161,6 +177,45 @@ export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
     }
   };
 
+  const renderTransactionIcon = (transaction: TransactionItem) => {
+    // If it's a preset icon, use it
+    if (transaction.iconType === 'preset' && transaction.presetIconId) {
+      const presetIcon = presetIcons.find(icon => icon.id === transaction.presetIconId);
+      if (presetIcon) {
+        return (
+          <div 
+            className="w-full h-full rounded-full flex items-center justify-center"
+            style={{ backgroundColor: presetIcon.backgroundColor }}
+          >
+            <img 
+              src={getLogoUrl(presetIcon.domain)} 
+              alt={transaction.name}
+              className="w-6 h-6 sm:w-7 sm:h-7"
+            />
+          </div>
+        );
+      }
+    }
+    
+    // If it's a custom icon, use it
+    if (transaction.iconType === 'custom' && transaction.iconUrl) {
+      return (
+        <img 
+          src={transaction.iconUrl} 
+          alt={transaction.name}
+          className="w-full h-full object-cover rounded-full"
+        />
+      );
+    }
+    
+    // Fallback to first letter
+    return (
+      <span className="text-sm sm:text-base font-bold text-gray-700 dark:text-gray-300">
+        {transaction.name.charAt(0).toUpperCase()}
+      </span>
+    );
+  };
+
   const renderTransaction = (transaction: TransactionItem) => {
     const isIncome = transaction.type === 'income';
     const bgColor = isIncome ? 'bg-green-50 dark:bg-green-900/10' : 'bg-red-50 dark:bg-red-900/10';
@@ -181,11 +236,9 @@ export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
         key={transaction.id}
         className={`flex items-center gap-3 p-3 sm:p-4 rounded-xl border ${bgColor} ${borderColor} transition-all duration-200`}
       >
-        {/* Avatar with first letter */}
-        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white dark:bg-gray-700 flex items-center justify-center flex-shrink-0 border-2 border-white dark:border-gray-600 shadow-sm">
-          <span className="text-sm sm:text-base font-bold text-gray-700 dark:text-gray-300">
-            {transaction.name.charAt(0).toUpperCase()}
-          </span>
+        {/* Avatar with icon or first letter */}
+        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white dark:bg-gray-700 flex items-center justify-center flex-shrink-0 border-2 border-white dark:border-gray-600 shadow-sm overflow-hidden">
+          {renderTransactionIcon(transaction)}
         </div>
 
         {/* Transaction Details */}

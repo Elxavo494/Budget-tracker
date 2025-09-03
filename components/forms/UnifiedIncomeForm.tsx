@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { IconSelector } from '@/components/ui/icon-selector';
 import { Plus, Edit } from 'lucide-react';
 import { RecurringIncome, OneTimeIncome, RecurrenceType } from '@/types';
 import { useSupabaseFinance } from '@/contexts/SupabaseFinanceContext';
@@ -43,6 +44,21 @@ export const UnifiedIncomeForm: React.FC<UnifiedIncomeFormProps> = ({
     date: oneTimeIncome?.date || format(new Date(), 'yyyy-MM-dd'),
   });
 
+  // Icon state management
+  const [recurringIconData, setRecurringIconData] = useState({
+    iconUrl: recurringIncome?.iconUrl || '',
+    iconType: recurringIncome?.iconType || 'custom' as 'custom' | 'preset',
+    presetIconId: recurringIncome?.presetIconId || ''
+  });
+  const [recurringIconFile, setRecurringIconFile] = useState<File | undefined>();
+  
+  const [oneTimeIconData, setOneTimeIconData] = useState({
+    iconUrl: oneTimeIncome?.iconUrl || '',
+    iconType: oneTimeIncome?.iconType || 'custom' as 'custom' | 'preset',
+    presetIconId: oneTimeIncome?.presetIconId || ''
+  });
+  const [oneTimeIconFile, setOneTimeIconFile] = useState<File | undefined>();
+
   const handleRecurringSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -63,9 +79,16 @@ export const UnifiedIncomeForm: React.FC<UnifiedIncomeFormProps> = ({
       console.log('Submitting recurring income:', data);
 
       if (recurringIncome) {
-        await updateRecurringIncome({ ...recurringIncome, ...data });
+        await updateRecurringIncome({ 
+          ...recurringIncome, 
+          ...data, 
+          ...recurringIconData 
+        }, recurringIconFile);
       } else {
-        await addRecurringIncome(data);
+        await addRecurringIncome({
+          ...data,
+          ...recurringIconData
+        }, recurringIconFile);
       }
 
       handleClose();
@@ -90,9 +113,16 @@ export const UnifiedIncomeForm: React.FC<UnifiedIncomeFormProps> = ({
       };
 
       if (oneTimeIncome) {
-        await updateOneTimeIncome({ ...oneTimeIncome, ...data });
+        await updateOneTimeIncome({ 
+          ...oneTimeIncome, 
+          ...data, 
+          ...oneTimeIconData 
+        }, oneTimeIconFile);
       } else {
-        await addOneTimeIncome(data);
+        await addOneTimeIncome({
+          ...data,
+          ...oneTimeIconData
+        }, oneTimeIconFile);
       }
 
       handleClose();
@@ -181,6 +211,15 @@ export const UnifiedIncomeForm: React.FC<UnifiedIncomeFormProps> = ({
                   />
                 </div>
 
+                <IconSelector
+                  iconUrl={oneTimeIconData.iconUrl}
+                  iconType={oneTimeIconData.iconType}
+                  presetIconId={oneTimeIconData.presetIconId}
+                  onIconChange={(iconData) => setOneTimeIconData(prev => ({ ...prev, ...iconData }))}
+                  onFileSelect={setOneTimeIconFile}
+                  label="Income Icon (optional)"
+                />
+
                 <div className="flex gap-2">
                   <Button type="submit" className="flex-1">
                     Add One-time Income
@@ -261,6 +300,15 @@ export const UnifiedIncomeForm: React.FC<UnifiedIncomeFormProps> = ({
                     onChange={(e) => setRecurringFormData({ ...recurringFormData, endDate: e.target.value })}
                   />
                 </div>
+
+                <IconSelector
+                  iconUrl={recurringIconData.iconUrl}
+                  iconType={recurringIconData.iconType}
+                  presetIconId={recurringIconData.presetIconId}
+                  onIconChange={(iconData) => setRecurringIconData(prev => ({ ...prev, ...iconData }))}
+                  onFileSelect={setRecurringIconFile}
+                  label="Income Icon (optional)"
+                />
 
                 <div className="flex gap-2">
                   <Button type="submit" className="flex-1">
@@ -343,6 +391,15 @@ export const UnifiedIncomeForm: React.FC<UnifiedIncomeFormProps> = ({
               />
             </div>
 
+            <IconSelector
+              iconUrl={recurringIconData.iconUrl}
+              iconType={recurringIconData.iconType}
+              presetIconId={recurringIconData.presetIconId}
+              onIconChange={(iconData) => setRecurringIconData(prev => ({ ...prev, ...iconData }))}
+              onFileSelect={setRecurringIconFile}
+              label="Income Icon (optional)"
+            />
+
             <div className="flex gap-2">
               <Button type="submit" className="flex-1">
                 Update Income
@@ -392,6 +449,15 @@ export const UnifiedIncomeForm: React.FC<UnifiedIncomeFormProps> = ({
                 required
               />
             </div>
+
+            <IconSelector
+              iconUrl={oneTimeIconData.iconUrl}
+              iconType={oneTimeIconData.iconType}
+              presetIconId={oneTimeIconData.presetIconId}
+              onIconChange={(iconData) => setOneTimeIconData(prev => ({ ...prev, ...iconData }))}
+              onFileSelect={setOneTimeIconFile}
+              label="Income Icon (optional)"
+            />
 
             <div className="flex gap-2">
               <Button type="submit" className="flex-1">

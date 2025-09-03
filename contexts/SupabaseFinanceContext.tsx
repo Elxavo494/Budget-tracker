@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { supabase } from '@/lib/supabase';
 import { defaultData } from '@/lib/storage';
+import { uploadTransactionIcon, deleteTransactionIcon } from '@/lib/image-utils';
 import { 
   FinanceData, 
   Category, 
@@ -21,17 +22,17 @@ interface SupabaseFinanceContextType {
   addCategory: (category: Omit<Category, 'id'>) => Promise<void>;
   updateCategory: (category: Category) => Promise<void>;
   deleteCategory: (id: string) => Promise<void>;
-  addRecurringIncome: (income: Omit<RecurringIncome, 'id' | 'createdAt'>) => Promise<void>;
-  updateRecurringIncome: (income: RecurringIncome) => Promise<void>;
+  addRecurringIncome: (income: Omit<RecurringIncome, 'id' | 'createdAt'>, iconFile?: File) => Promise<void>;
+  updateRecurringIncome: (income: RecurringIncome, iconFile?: File) => Promise<void>;
   deleteRecurringIncome: (id: string) => Promise<void>;
-  addRecurringExpense: (expense: Omit<RecurringExpense, 'id' | 'createdAt'>) => Promise<void>;
-  updateRecurringExpense: (expense: RecurringExpense) => Promise<void>;
+  addRecurringExpense: (expense: Omit<RecurringExpense, 'id' | 'createdAt'>, iconFile?: File) => Promise<void>;
+  updateRecurringExpense: (expense: RecurringExpense, iconFile?: File) => Promise<void>;
   deleteRecurringExpense: (id: string) => Promise<void>;
-  addOneTimeIncome: (income: Omit<OneTimeIncome, 'id' | 'createdAt'>) => Promise<void>;
-  updateOneTimeIncome: (income: OneTimeIncome) => Promise<void>;
+  addOneTimeIncome: (income: Omit<OneTimeIncome, 'id' | 'createdAt'>, iconFile?: File) => Promise<void>;
+  updateOneTimeIncome: (income: OneTimeIncome, iconFile?: File) => Promise<void>;
   deleteOneTimeIncome: (id: string) => Promise<void>;
-  addOneTimeExpense: (expense: Omit<OneTimeExpense, 'id' | 'createdAt'>) => Promise<void>;
-  updateOneTimeExpense: (expense: OneTimeExpense) => Promise<void>;
+  addOneTimeExpense: (expense: Omit<OneTimeExpense, 'id' | 'createdAt'>, iconFile?: File) => Promise<void>;
+  updateOneTimeExpense: (expense: OneTimeExpense, iconFile?: File) => Promise<void>;
   deleteOneTimeExpense: (id: string) => Promise<void>;
   reorderRecurringIncomes: (items: RecurringIncome[]) => Promise<void>;
   reorderRecurringExpenses: (items: RecurringExpense[]) => Promise<void>;
@@ -116,6 +117,9 @@ export const SupabaseFinanceProvider: React.FC<{ children: React.ReactNode }> = 
           recurrence: income.recurrence,
           startDate: income.start_date,
           endDate: income.end_date,
+          iconUrl: income.icon_url,
+          iconType: income.icon_type,
+          presetIconId: income.preset_icon_id,
           createdAt: income.created_at,
         }));
 
@@ -128,6 +132,9 @@ export const SupabaseFinanceProvider: React.FC<{ children: React.ReactNode }> = 
           startDate: expense.start_date,
           endDate: expense.end_date,
           categoryId: expense.category_id,
+          iconUrl: expense.icon_url,
+          iconType: expense.icon_type,
+          presetIconId: expense.preset_icon_id,
           createdAt: expense.created_at,
         }));
 
@@ -137,6 +144,9 @@ export const SupabaseFinanceProvider: React.FC<{ children: React.ReactNode }> = 
           name: income.name,
           amount: income.amount,
           date: income.date,
+          iconUrl: income.icon_url,
+          iconType: income.icon_type,
+          presetIconId: income.preset_icon_id,
           createdAt: income.created_at,
         }));
 
@@ -147,6 +157,9 @@ export const SupabaseFinanceProvider: React.FC<{ children: React.ReactNode }> = 
           amount: expense.amount,
           date: expense.date,
           categoryId: expense.category_id,
+          iconUrl: expense.icon_url,
+          iconType: expense.icon_type,
+          presetIconId: expense.preset_icon_id,
           createdAt: expense.created_at,
         }));
 
@@ -277,87 +290,139 @@ export const SupabaseFinanceProvider: React.FC<{ children: React.ReactNode }> = 
   };
 
   // Recurring Income operations
-  const addRecurringIncome = async (income: Omit<RecurringIncome, 'id' | 'createdAt'>) => {
+  const addRecurringIncome = async (income: Omit<RecurringIncome, 'id' | 'createdAt'>, imageFile?: File) => {
     if (!user || !supabase) return;
     
     const loadingToast = toast.loading('Adding recurring income...');
     console.log('Adding recurring income to Supabase:', income);
     
-    const { data: newIncome, error } = await supabase
-      .from('recurring_incomes')
-      .insert([{ 
-        name: income.name,
-        amount: income.amount,
-        recurrence: income.recurrence,
-        start_date: income.startDate,
-        end_date: income.endDate || null,
-        user_id: user.id 
-      }])
-      .select()
-      .single();
+    try {
+      let imageUrl: string | undefined;
 
-    if (error) {
+      // Upload image if provided
+      if (imageFile) {
+        imageUrl = await uploadTransactionIcon(imageFile, user.id, 'income');
+      }
+
+      const { data: newIncome, error } = await supabase
+        .from('recurring_incomes')
+        .insert([{ 
+          name: income.name,
+          amount: income.amount,
+          recurrence: income.recurrence,
+          start_date: income.startDate,
+          end_date: income.endDate || null,
+          icon_url: imageUrl || null,
+          user_id: user.id 
+        }])
+        .select()
+        .single();
+
+      if (error) {
+        // If database insert fails but image was uploaded, clean up the image
+        if (imageUrl) {
+          await deleteTransactionIcon(imageUrl);
+        }
+        toast.error('Failed to add recurring income', { id: loadingToast });
+        console.error('Supabase error:', error);
+        throw error;
+      }
+      
+      console.log('Successfully added income:', newIncome);
+      
+      // Transform the database response back to our frontend format
+      const transformedIncome = {
+        id: newIncome.id,
+        name: newIncome.name,
+        amount: newIncome.amount,
+        recurrence: newIncome.recurrence,
+        startDate: newIncome.start_date,
+        endDate: newIncome.end_date,
+        iconUrl: newIncome.icon_url,
+        createdAt: newIncome.created_at,
+      };
+      
+      setData(prev => ({
+        ...prev,
+        recurringIncomes: [transformedIncome, ...prev.recurringIncomes],
+      }));
+      
+      toast.success('Recurring income added successfully!', { id: loadingToast });
+    } catch (error) {
       toast.error('Failed to add recurring income', { id: loadingToast });
-      console.error('Supabase error:', error);
       throw error;
     }
-    
-    console.log('Successfully added income:', newIncome);
-    
-    // Transform the database response back to our frontend format
-    const transformedIncome = {
-      id: newIncome.id,
-      name: newIncome.name,
-      amount: newIncome.amount,
-      recurrence: newIncome.recurrence,
-      startDate: newIncome.start_date,
-      endDate: newIncome.end_date,
-      createdAt: newIncome.created_at,
-    };
-    
-    setData(prev => ({
-      ...prev,
-      recurringIncomes: [transformedIncome, ...prev.recurringIncomes],
-    }));
-    
-    toast.success('Recurring income added successfully!', { id: loadingToast });
   };
 
-  const updateRecurringIncome = async (income: RecurringIncome) => {
-    if (!supabase) return;
+  const updateRecurringIncome = async (income: RecurringIncome, iconFile?: File) => {
+    if (!supabase || !user) return;
     
     const loadingToast = toast.loading('Updating recurring income...');
     
-    const { error } = await supabase
-      .from('recurring_incomes')
-      .update({
-        name: income.name,
-        amount: income.amount,
-        recurrence: income.recurrence,
-        start_date: income.startDate,
-        end_date: income.endDate || null,
-      })
-      .eq('id', income.id);
+    try {
+      let iconUrl = income.iconUrl;
 
-    if (error) {
+      // Handle icon upload/update
+      if (iconFile) {
+        // Delete old icon if it exists and is custom
+        if (income.iconUrl && income.iconType === 'custom') {
+          await deleteTransactionIcon(income.iconUrl);
+        }
+        // Upload new icon
+        iconUrl = await uploadTransactionIcon(iconFile, user.id, 'income');
+      }
+
+      const { error } = await supabase
+        .from('recurring_incomes')
+        .update({
+          name: income.name,
+          amount: income.amount,
+          recurrence: income.recurrence,
+          start_date: income.startDate,
+          end_date: income.endDate || null,
+          icon_url: iconUrl || null,
+          icon_type: income.iconType || null,
+          preset_icon_id: income.presetIconId || null,
+        })
+        .eq('id', income.id);
+
+      if (error) {
+        // If database update fails but new icon was uploaded, clean up
+        if (iconFile && iconUrl && iconUrl !== income.iconUrl) {
+          await deleteTransactionIcon(iconUrl);
+        }
+        toast.error('Failed to update recurring income', { id: loadingToast });
+        throw error;
+      }
+      
+      const updatedIncome = { 
+        ...income, 
+        iconUrl: iconFile ? iconUrl : income.iconUrl,
+        iconType: iconFile ? 'custom' : income.iconType,
+        presetIconId: iconFile ? undefined : income.presetIconId
+      };
+      
+      setData(prev => ({
+        ...prev,
+        recurringIncomes: prev.recurringIncomes.map(inc => 
+          inc.id === income.id ? updatedIncome : inc
+        ),
+      }));
+      
+      toast.success('Recurring income updated successfully!', { id: loadingToast });
+    } catch (error) {
       toast.error('Failed to update recurring income', { id: loadingToast });
       throw error;
     }
-    
-    setData(prev => ({
-      ...prev,
-      recurringIncomes: prev.recurringIncomes.map(inc => 
-        inc.id === income.id ? income : inc
-      ),
-    }));
-    
-    toast.success('Recurring income updated successfully!', { id: loadingToast });
   };
 
   const deleteRecurringIncome = async (id: string) => {
     if (!supabase) return;
     
     const loadingToast = toast.loading('Deleting recurring income...');
+    
+    // Get the item to delete to access the image URL
+    const incomeToDelete = data.recurringIncomes.find(inc => inc.id === id);
     
     const { error } = await supabase
       .from('recurring_incomes')
@@ -369,6 +434,11 @@ export const SupabaseFinanceProvider: React.FC<{ children: React.ReactNode }> = 
       throw error;
     }
     
+    // Delete associated image if it exists
+    if (incomeToDelete?.iconUrl) {
+      await deleteTransactionIcon(incomeToDelete.iconUrl);
+    }
+    
     setData(prev => ({
       ...prev,
       recurringIncomes: prev.recurringIncomes.filter(inc => inc.id !== id),
@@ -378,90 +448,142 @@ export const SupabaseFinanceProvider: React.FC<{ children: React.ReactNode }> = 
   };
 
   // Recurring Expense operations
-  const addRecurringExpense = async (expense: Omit<RecurringExpense, 'id' | 'createdAt'>) => {
+  const addRecurringExpense = async (expense: Omit<RecurringExpense, 'id' | 'createdAt'>, imageFile?: File) => {
     if (!user || !supabase) return;
     
     const loadingToast = toast.loading('Adding recurring expense...');
     console.log('Adding recurring expense to Supabase:', expense);
     
-    const { data: newExpense, error } = await supabase
-      .from('recurring_expenses')
-      .insert([{ 
-        name: expense.name,
-        amount: expense.amount,
-        recurrence: expense.recurrence,
-        start_date: expense.startDate,
-        end_date: expense.endDate || null,
-        category_id: expense.categoryId,
-        user_id: user.id 
-      }])
-      .select()
-      .single();
+    try {
+      let imageUrl: string | undefined;
 
-    if (error) {
+      // Upload image if provided
+      if (imageFile) {
+        imageUrl = await uploadTransactionIcon(imageFile, user.id, 'expense');
+      }
+
+      const { data: newExpense, error } = await supabase
+        .from('recurring_expenses')
+        .insert([{ 
+          name: expense.name,
+          amount: expense.amount,
+          recurrence: expense.recurrence,
+          start_date: expense.startDate,
+          end_date: expense.endDate || null,
+          category_id: expense.categoryId,
+          icon_url: imageUrl || null,
+          user_id: user.id 
+        }])
+        .select()
+        .single();
+
+      if (error) {
+        // If database insert fails but image was uploaded, clean up the image
+        if (imageUrl) {
+          await deleteTransactionIcon(imageUrl);
+        }
+        toast.error('Failed to add recurring expense', { id: loadingToast });
+        console.error('Supabase error:', error);
+        throw error;
+      }
+      
+      console.log('Successfully added expense:', newExpense);
+      
+      // Transform the database response back to our frontend format
+      const transformedExpense = {
+        id: newExpense.id,
+        name: newExpense.name,
+        amount: newExpense.amount,
+        recurrence: newExpense.recurrence,
+        startDate: newExpense.start_date,
+        endDate: newExpense.end_date,
+        categoryId: newExpense.category_id,
+        iconUrl: newExpense.icon_url,
+        createdAt: newExpense.created_at,
+      };
+      
+      setData(prev => ({
+        ...prev,
+        recurringExpenses: [transformedExpense, ...prev.recurringExpenses],
+      }));
+      
+      toast.success('Recurring expense added successfully!', { id: loadingToast });
+    } catch (error) {
       toast.error('Failed to add recurring expense', { id: loadingToast });
-      console.error('Supabase error:', error);
       throw error;
     }
-    
-    console.log('Successfully added expense:', newExpense);
-    
-    // Transform the database response back to our frontend format
-    const transformedExpense = {
-      id: newExpense.id,
-      name: newExpense.name,
-      amount: newExpense.amount,
-      recurrence: newExpense.recurrence,
-      startDate: newExpense.start_date,
-      endDate: newExpense.end_date,
-      categoryId: newExpense.category_id,
-      createdAt: newExpense.created_at,
-    };
-    
-    setData(prev => ({
-      ...prev,
-      recurringExpenses: [transformedExpense, ...prev.recurringExpenses],
-    }));
-    
-    toast.success('Recurring expense added successfully!', { id: loadingToast });
   };
 
-  const updateRecurringExpense = async (expense: RecurringExpense) => {
-    if (!supabase) return;
+  const updateRecurringExpense = async (expense: RecurringExpense, iconFile?: File) => {
+    if (!supabase || !user) return;
     
     const loadingToast = toast.loading('Updating recurring expense...');
     
-    const { error } = await supabase
-      .from('recurring_expenses')
-      .update({
-        name: expense.name,
-        amount: expense.amount,
-        recurrence: expense.recurrence,
-        start_date: expense.startDate,
-        end_date: expense.endDate || null,
-        category_id: expense.categoryId,
-      })
-      .eq('id', expense.id);
+    try {
+      let iconUrl = expense.iconUrl;
 
-    if (error) {
+      // Handle icon upload/update
+      if (iconFile) {
+        // Delete old icon if it exists and is custom
+        if (expense.iconUrl && expense.iconType === 'custom') {
+          await deleteTransactionIcon(expense.iconUrl);
+        }
+        // Upload new icon
+        iconUrl = await uploadTransactionIcon(iconFile, user.id, 'expense');
+      }
+
+      const { error } = await supabase
+        .from('recurring_expenses')
+        .update({
+          name: expense.name,
+          amount: expense.amount,
+          recurrence: expense.recurrence,
+          start_date: expense.startDate,
+          end_date: expense.endDate || null,
+          category_id: expense.categoryId,
+          icon_url: iconUrl || null,
+          icon_type: expense.iconType || null,
+          preset_icon_id: expense.presetIconId || null,
+        })
+        .eq('id', expense.id);
+
+      if (error) {
+        // If database update fails but new icon was uploaded, clean up
+        if (iconFile && iconUrl && iconUrl !== expense.iconUrl) {
+          await deleteTransactionIcon(iconUrl);
+        }
+        toast.error('Failed to update recurring expense', { id: loadingToast });
+        throw error;
+      }
+      
+      const updatedExpense = { 
+        ...expense, 
+        iconUrl: iconFile ? iconUrl : expense.iconUrl,
+        iconType: iconFile ? 'custom' : expense.iconType,
+        presetIconId: iconFile ? undefined : expense.presetIconId
+      };
+      
+      setData(prev => ({
+        ...prev,
+        recurringExpenses: prev.recurringExpenses.map(exp => 
+          exp.id === expense.id ? updatedExpense : exp
+        ),
+      }));
+      
+      toast.success('Recurring expense updated successfully!', { id: loadingToast });
+    } catch (error) {
       toast.error('Failed to update recurring expense', { id: loadingToast });
       throw error;
     }
-    
-    setData(prev => ({
-      ...prev,
-      recurringExpenses: prev.recurringExpenses.map(exp => 
-        exp.id === expense.id ? expense : exp
-      ),
-    }));
-    
-    toast.success('Recurring expense updated successfully!', { id: loadingToast });
   };
 
   const deleteRecurringExpense = async (id: string) => {
     if (!supabase) return;
     
     const loadingToast = toast.loading('Deleting recurring expense...');
+    
+    // Get the item to delete to access the image URL
+    const expenseToDelete = data.recurringExpenses.find(exp => exp.id === id);
     
     const { error } = await supabase
       .from('recurring_expenses')
@@ -473,6 +595,11 @@ export const SupabaseFinanceProvider: React.FC<{ children: React.ReactNode }> = 
       throw error;
     }
     
+    // Delete associated image if it exists
+    if (expenseToDelete?.iconUrl) {
+      await deleteTransactionIcon(expenseToDelete.iconUrl);
+    }
+    
     setData(prev => ({
       ...prev,
       recurringExpenses: prev.recurringExpenses.filter(exp => exp.id !== id),
@@ -482,81 +609,133 @@ export const SupabaseFinanceProvider: React.FC<{ children: React.ReactNode }> = 
   };
 
   // One-time Income operations
-  const addOneTimeIncome = async (income: Omit<OneTimeIncome, 'id' | 'createdAt'>) => {
+  const addOneTimeIncome = async (income: Omit<OneTimeIncome, 'id' | 'createdAt'>, imageFile?: File) => {
     if (!user || !supabase) return;
     
     const loadingToast = toast.loading('Adding one-time income...');
     console.log('Adding one-time income to Supabase:', income);
     
-    const { data: newIncome, error } = await supabase
-      .from('one_time_incomes')
-      .insert([{ 
-        name: income.name,
-        amount: income.amount,
-        date: income.date,
-        user_id: user.id 
-      }])
-      .select()
-      .single();
+    try {
+      let imageUrl: string | undefined;
 
-    if (error) {
+      // Upload image if provided
+      if (imageFile) {
+        imageUrl = await uploadTransactionIcon(imageFile, user.id, 'income');
+      }
+
+      const { data: newIncome, error } = await supabase
+        .from('one_time_incomes')
+        .insert([{ 
+          name: income.name,
+          amount: income.amount,
+          date: income.date,
+          icon_url: imageUrl || null,
+          user_id: user.id 
+        }])
+        .select()
+        .single();
+
+      if (error) {
+        // If database insert fails but image was uploaded, clean up the image
+        if (imageUrl) {
+          await deleteTransactionIcon(imageUrl);
+        }
+        toast.error('Failed to add one-time income', { id: loadingToast });
+        console.error('Supabase error:', error);
+        throw error;
+      }
+      
+      console.log('Successfully added one-time income:', newIncome);
+      
+      // Transform the database response back to our frontend format
+      const transformedIncome = {
+        id: newIncome.id,
+        name: newIncome.name,
+        amount: newIncome.amount,
+        date: newIncome.date,
+        iconUrl: newIncome.icon_url,
+        createdAt: newIncome.created_at,
+      };
+      
+      setData(prev => ({
+        ...prev,
+        oneTimeIncomes: [transformedIncome, ...prev.oneTimeIncomes],
+      }));
+      
+      toast.success('One-time income added successfully!', { id: loadingToast });
+    } catch (error) {
       toast.error('Failed to add one-time income', { id: loadingToast });
-      console.error('Supabase error:', error);
       throw error;
     }
-    
-    console.log('Successfully added one-time income:', newIncome);
-    
-    // Transform the database response back to our frontend format
-    const transformedIncome = {
-      id: newIncome.id,
-      name: newIncome.name,
-      amount: newIncome.amount,
-      date: newIncome.date,
-      createdAt: newIncome.created_at,
-    };
-    
-    setData(prev => ({
-      ...prev,
-      oneTimeIncomes: [transformedIncome, ...prev.oneTimeIncomes],
-    }));
-    
-    toast.success('One-time income added successfully!', { id: loadingToast });
   };
 
-  const updateOneTimeIncome = async (income: OneTimeIncome) => {
-    if (!supabase) return;
+  const updateOneTimeIncome = async (income: OneTimeIncome, iconFile?: File) => {
+    if (!supabase || !user) return;
     
     const loadingToast = toast.loading('Updating one-time income...');
     
-    const { error } = await supabase
-      .from('one_time_incomes')
-      .update({
-        name: income.name,
-        amount: income.amount,
-        date: income.date,
-      })
-      .eq('id', income.id);
+    try {
+      let iconUrl = income.iconUrl;
 
-    if (error) {
+      // Handle icon upload/update
+      if (iconFile) {
+        // Delete old icon if it exists and is custom
+        if (income.iconUrl && income.iconType === 'custom') {
+          await deleteTransactionIcon(income.iconUrl);
+        }
+        // Upload new icon
+        iconUrl = await uploadTransactionIcon(iconFile, user.id, 'income');
+      }
+
+      const { error } = await supabase
+        .from('one_time_incomes')
+        .update({
+          name: income.name,
+          amount: income.amount,
+          date: income.date,
+          icon_url: iconUrl || null,
+          icon_type: income.iconType || null,
+          preset_icon_id: income.presetIconId || null,
+        })
+        .eq('id', income.id);
+
+      if (error) {
+        // If database update fails but new icon was uploaded, clean up
+        if (iconFile && iconUrl && iconUrl !== income.iconUrl) {
+          await deleteTransactionIcon(iconUrl);
+        }
+        toast.error('Failed to update one-time income', { id: loadingToast });
+        throw error;
+      }
+      
+      const updatedIncome = { 
+        ...income, 
+        iconUrl: iconFile ? iconUrl : income.iconUrl,
+        iconType: iconFile ? 'custom' : income.iconType,
+        presetIconId: iconFile ? undefined : income.presetIconId
+      };
+      
+      setData(prev => ({
+        ...prev,
+        oneTimeIncomes: prev.oneTimeIncomes.map(inc => 
+          inc.id === income.id ? updatedIncome : inc
+        ),
+      }));
+      
+      toast.success('One-time income updated successfully!', { id: loadingToast });
+    } catch (error) {
       toast.error('Failed to update one-time income', { id: loadingToast });
       throw error;
     }
-    
-    setData(prev => ({
-      ...prev,
-      oneTimeIncomes: prev.oneTimeIncomes.map(inc => 
-        inc.id === income.id ? income : inc
-      ),
-    }));
-    
-    toast.success('One-time income updated successfully!', { id: loadingToast });
   };
 
   const deleteOneTimeIncome = async (id: string) => {
     if (!supabase) return;
     
     const loadingToast = toast.loading('Deleting one-time income...');
+    
+    // Get the item to delete to access the image URL
+    const incomeToDelete = data.oneTimeIncomes.find(inc => inc.id === id);
     
     const { error } = await supabase
       .from('one_time_incomes')
@@ -568,6 +747,11 @@ export const SupabaseFinanceProvider: React.FC<{ children: React.ReactNode }> = 
       throw error;
     }
     
+    // Delete associated image if it exists
+    if (incomeToDelete?.iconUrl) {
+      await deleteTransactionIcon(incomeToDelete.iconUrl);
+    }
+    
     setData(prev => ({
       ...prev,
       oneTimeIncomes: prev.oneTimeIncomes.filter(inc => inc.id !== id),
@@ -577,84 +761,140 @@ export const SupabaseFinanceProvider: React.FC<{ children: React.ReactNode }> = 
   };
 
   // One-time Expense operations
-  const addOneTimeExpense = async (expense: Omit<OneTimeExpense, 'id' | 'createdAt'>) => {
+  const addOneTimeExpense = async (expense: Omit<OneTimeExpense, 'id' | 'createdAt'>, iconFile?: File) => {
     if (!user || !supabase) return;
     
     const loadingToast = toast.loading('Adding one-time expense...');
     console.log('Adding one-time expense to Supabase:', expense);
     
-    const { data: newExpense, error } = await supabase
-      .from('one_time_expenses')
-      .insert([{ 
-        name: expense.name,
-        amount: expense.amount,
-        date: expense.date,
-        category_id: expense.categoryId,
-        user_id: user.id 
-      }])
-      .select()
-      .single();
+    try {
+      let finalIconUrl = expense.iconUrl;
 
-    if (error) {
+      // Upload custom icon if provided
+      if (iconFile && expense.iconType === 'custom') {
+        finalIconUrl = await uploadTransactionIcon(iconFile, user.id, 'expense');
+      }
+
+      const { data: newExpense, error } = await supabase
+        .from('one_time_expenses')
+        .insert([{ 
+          name: expense.name,
+          amount: expense.amount,
+          date: expense.date,
+          category_id: expense.categoryId,
+          icon_url: finalIconUrl || null,
+          icon_type: expense.iconType || 'custom',
+          preset_icon_id: expense.presetIconId || null,
+          user_id: user.id 
+        }])
+        .select()
+        .single();
+
+      if (error) {
+        // If database insert fails but custom icon was uploaded, clean up the icon
+        if (iconFile && finalIconUrl && finalIconUrl !== expense.iconUrl) {
+          await deleteTransactionIcon(finalIconUrl);
+        }
+        toast.error('Failed to add one-time expense', { id: loadingToast });
+        console.error('Supabase error:', error);
+        throw error;
+      }
+      
+      console.log('Successfully added one-time expense:', newExpense);
+      
+      // Transform the database response back to our frontend format
+      const transformedExpense = {
+        id: newExpense.id,
+        name: newExpense.name,
+        amount: newExpense.amount,
+        date: newExpense.date,
+        categoryId: newExpense.category_id,
+        iconUrl: newExpense.icon_url,
+        iconType: newExpense.icon_type,
+        presetIconId: newExpense.preset_icon_id,
+        createdAt: newExpense.created_at,
+      };
+      
+      setData(prev => ({
+        ...prev,
+        oneTimeExpenses: [transformedExpense, ...prev.oneTimeExpenses],
+      }));
+      
+      toast.success('One-time expense added successfully!', { id: loadingToast });
+    } catch (error) {
       toast.error('Failed to add one-time expense', { id: loadingToast });
-      console.error('Supabase error:', error);
       throw error;
     }
-    
-    console.log('Successfully added one-time expense:', newExpense);
-    
-    // Transform the database response back to our frontend format
-    const transformedExpense = {
-      id: newExpense.id,
-      name: newExpense.name,
-      amount: newExpense.amount,
-      date: newExpense.date,
-      categoryId: newExpense.category_id,
-      createdAt: newExpense.created_at,
-    };
-    
-    setData(prev => ({
-      ...prev,
-      oneTimeExpenses: [transformedExpense, ...prev.oneTimeExpenses],
-    }));
-    
-    toast.success('One-time expense added successfully!', { id: loadingToast });
   };
 
-  const updateOneTimeExpense = async (expense: OneTimeExpense) => {
-    if (!supabase) return;
+  const updateOneTimeExpense = async (expense: OneTimeExpense, iconFile?: File) => {
+    if (!supabase || !user) return;
     
     const loadingToast = toast.loading('Updating one-time expense...');
     
-    const { error } = await supabase
-      .from('one_time_expenses')
-      .update({
-        name: expense.name,
-        amount: expense.amount,
-        date: expense.date,
-        category_id: expense.categoryId,
-      })
-      .eq('id', expense.id);
+    try {
+      let iconUrl = expense.iconUrl;
 
-    if (error) {
+      // Handle icon upload/update
+      if (iconFile) {
+        // Delete old icon if it exists and is custom
+        if (expense.iconUrl && expense.iconType === 'custom') {
+          await deleteTransactionIcon(expense.iconUrl);
+        }
+        // Upload new icon
+        iconUrl = await uploadTransactionIcon(iconFile, user.id, 'expense');
+      }
+
+      const { error } = await supabase
+        .from('one_time_expenses')
+        .update({
+          name: expense.name,
+          amount: expense.amount,
+          date: expense.date,
+          category_id: expense.categoryId,
+          icon_url: iconUrl || null,
+          icon_type: expense.iconType || null,
+          preset_icon_id: expense.presetIconId || null,
+        })
+        .eq('id', expense.id);
+
+      if (error) {
+        // If database update fails but new icon was uploaded, clean up
+        if (iconFile && iconUrl && iconUrl !== expense.iconUrl) {
+          await deleteTransactionIcon(iconUrl);
+        }
+        toast.error('Failed to update one-time expense', { id: loadingToast });
+        throw error;
+      }
+      
+      const updatedExpense = { 
+        ...expense, 
+        iconUrl: iconFile ? iconUrl : expense.iconUrl,
+        iconType: iconFile ? 'custom' : expense.iconType,
+        presetIconId: iconFile ? undefined : expense.presetIconId
+      };
+      
+      setData(prev => ({
+        ...prev,
+        oneTimeExpenses: prev.oneTimeExpenses.map(exp => 
+          exp.id === expense.id ? updatedExpense : exp
+        ),
+      }));
+      
+      toast.success('One-time expense updated successfully!', { id: loadingToast });
+    } catch (error) {
       toast.error('Failed to update one-time expense', { id: loadingToast });
       throw error;
     }
-    
-    setData(prev => ({
-      ...prev,
-      oneTimeExpenses: prev.oneTimeExpenses.map(exp => 
-        exp.id === expense.id ? expense : exp
-      ),
-    }));
-    
-    toast.success('One-time expense updated successfully!', { id: loadingToast });
   };
 
   const deleteOneTimeExpense = async (id: string) => {
     if (!supabase) return;
     
     const loadingToast = toast.loading('Deleting one-time expense...');
+    
+    // Get the item to delete to access the image URL
+    const expenseToDelete = data.oneTimeExpenses.find(exp => exp.id === id);
     
     const { error } = await supabase
       .from('one_time_expenses')
@@ -664,6 +904,11 @@ export const SupabaseFinanceProvider: React.FC<{ children: React.ReactNode }> = 
     if (error) {
       toast.error('Failed to delete one-time expense', { id: loadingToast });
       throw error;
+    }
+    
+    // Delete associated image if it exists
+    if (expenseToDelete?.iconUrl) {
+      await deleteTransactionIcon(expenseToDelete.iconUrl);
     }
     
     setData(prev => ({

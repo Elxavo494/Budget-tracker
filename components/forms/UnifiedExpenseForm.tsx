@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { IconSelector } from '@/components/ui/icon-selector';
 import { Plus, Edit } from 'lucide-react';
 import { RecurringExpense, OneTimeExpense, RecurrenceType } from '@/types';
 import { useSupabaseFinance } from '@/contexts/SupabaseFinanceContext';
@@ -46,6 +47,21 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
     date: oneTimeExpense?.date || format(new Date(), 'yyyy-MM-dd'),
   });
 
+  // Icon state management
+  const [recurringIconData, setRecurringIconData] = useState({
+    iconUrl: recurringExpense?.iconUrl || '',
+    iconType: recurringExpense?.iconType || 'custom' as 'custom' | 'preset',
+    presetIconId: recurringExpense?.presetIconId || ''
+  });
+  const [recurringIconFile, setRecurringIconFile] = useState<File | undefined>();
+  
+  const [oneTimeIconData, setOneTimeIconData] = useState({
+    iconUrl: oneTimeExpense?.iconUrl || '',
+    iconType: oneTimeExpense?.iconType || 'custom' as 'custom' | 'preset',
+    presetIconId: oneTimeExpense?.presetIconId || ''
+  });
+  const [oneTimeIconFile, setOneTimeIconFile] = useState<File | undefined>();
+
   const handleRecurringSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -67,9 +83,16 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
       console.log('Submitting recurring expense:', data);
 
       if (recurringExpense) {
-        await updateRecurringExpense({ ...recurringExpense, ...data });
+        await updateRecurringExpense({ 
+          ...recurringExpense, 
+          ...data, 
+          ...recurringIconData 
+        }, recurringIconFile);
       } else {
-        await addRecurringExpense(data);
+        await addRecurringExpense({
+          ...data,
+          ...recurringIconData
+        }, recurringIconFile);
       }
 
       handleClose();
@@ -98,9 +121,16 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
       console.log('Submitting one-time expense:', data);
 
       if (oneTimeExpense) {
-        await updateOneTimeExpense({ ...oneTimeExpense, ...data });
+        await updateOneTimeExpense({ 
+          ...oneTimeExpense, 
+          ...data, 
+          ...oneTimeIconData 
+        }, oneTimeIconFile);
       } else {
-        await addOneTimeExpense(data);
+        await addOneTimeExpense({
+          ...data,
+          ...oneTimeIconData
+        }, oneTimeIconFile);
       }
 
       handleClose();
@@ -211,6 +241,15 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
                   />
                 </div>
 
+                <IconSelector
+                  iconUrl={oneTimeIconData.iconUrl}
+                  iconType={oneTimeIconData.iconType}
+                  presetIconId={oneTimeIconData.presetIconId}
+                  onIconChange={(iconData) => setOneTimeIconData(prev => ({ ...prev, ...iconData }))}
+                  onFileSelect={setOneTimeIconFile}
+                  label="Expense Icon (optional)"
+                />
+
                 <div className="flex gap-2">
                   <Button type="submit" className="flex-1">
                     Add One-time Expense
@@ -310,6 +349,15 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
                     onChange={(e) => setRecurringFormData({ ...recurringFormData, endDate: e.target.value })}
                   />
                 </div>
+
+                <IconSelector
+                  iconUrl={recurringIconData.iconUrl}
+                  iconType={recurringIconData.iconType}
+                  presetIconId={recurringIconData.presetIconId}
+                  onIconChange={(iconData) => setRecurringIconData(prev => ({ ...prev, ...iconData }))}
+                  onFileSelect={setRecurringIconFile}
+                  label="Expense Icon (optional)"
+                />
 
                 <div className="flex gap-2">
                   <Button type="submit" className="flex-1">
@@ -411,6 +459,15 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
               />
             </div>
 
+            <IconSelector
+              iconUrl={recurringIconData.iconUrl}
+              iconType={recurringIconData.iconType}
+              presetIconId={recurringIconData.presetIconId}
+              onIconChange={(iconData) => setRecurringIconData(prev => ({ ...prev, ...iconData }))}
+              onFileSelect={setRecurringIconFile}
+              label="Expense Icon (optional)"
+            />
+
             <div className="flex gap-2">
               <Button type="submit" className="flex-1">
                 Update Expense
@@ -479,6 +536,15 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
                 required
               />
             </div>
+
+            <IconSelector
+              iconUrl={oneTimeIconData.iconUrl}
+              iconType={oneTimeIconData.iconType}
+              presetIconId={oneTimeIconData.presetIconId}
+              onIconChange={(iconData) => setOneTimeIconData(prev => ({ ...prev, ...iconData }))}
+              onFileSelect={setOneTimeIconFile}
+              label="Expense Icon (optional)"
+            />
 
             <div className="flex gap-2">
               <Button type="submit" className="flex-1">

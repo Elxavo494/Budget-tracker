@@ -185,18 +185,28 @@ export const Dashboard: React.FC = () => {
         <div className="relative max-w-[1680px] mx-auto px-4 py-8">
         {/* New Header Design */}
         <div className="mb-3">
-          {/* Month Selector */}
-          <div className="flex justify-center mb-6">
+          {/* Large Amount Display */}
+          <div className="text-center mb-3">
+            <div className="text-6xl sm:text-7xl font-bold text-shimmer mb-2 tracking-tight">
+              {formatCurrency(leftToSpend)}
+            </div>
+            <p className="text-muted-foreground text-base font-medium">
+              Left to spend this month
+            </p>
+          </div>
+
+           {/* Month Selector */}
+           <div className="flex justify-center mb-6">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
-                  variant="glass"
-                  className="px-6 py-3 gap-3"
+                  variant="ghost"
+                  className="px-3 py-1.5 gap-2 h-auto hover:bg-slate-100 dark:hover:bg-slate-800/50"
                 >
-                  <span className="font-semibold text-slate-700 dark:text-slate-200 text-lg">
+                  <span className="font-medium text-slate-600 dark:text-slate-400 text-sm">
                     {format(selectedDate, 'MMMM yyyy')}
                   </span>
-                  <ChevronDown className="h-4 w-4 text-slate-500 dark:text-slate-400" />
+                  <ChevronDown className="h-3 w-3 text-slate-400 dark:text-slate-500" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="center" className="w-56 p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg">
@@ -259,16 +269,6 @@ export const Dashboard: React.FC = () => {
                 </Dialog>
               </DropdownMenuContent>
             </DropdownMenu>
-          </div>
-
-          {/* Large Amount Display */}
-          <div className="text-center mb-8">
-            <div className="text-6xl sm:text-7xl font-bold text-shimmer mb-2 tracking-tight">
-              {formatCurrency(leftToSpend)}
-            </div>
-            <p className="text-muted-foreground text-base font-medium">
-              Total left to spend this month
-            </p>
           </div>
 
           {/* Budget Card */}
