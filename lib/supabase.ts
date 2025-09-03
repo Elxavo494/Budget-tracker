@@ -17,7 +17,33 @@ export const supabase = supabaseUrl && supabaseAnonKey
         detectSessionInUrl: true,
         persistSession: true,
         autoRefreshToken: true,
-      }
+        // Add more aggressive token refresh and storage handling
+        storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+        // Debug auth flows in development
+        debug: process.env.NODE_ENV === 'development',
+      },
+      // Add global fetch configuration
+      global: {
+        fetch: (url, options = {}) => {
+          console.log('🔧 Supabase: Making request to', url.toString().replace(supabaseUrl, '[SUPABASE_URL]'));
+          
+          // Create timeout signal with fallback for older browsers
+          let timeoutSignal;
+          if (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) {
+            timeoutSignal = AbortSignal.timeout(10000);
+          } else {
+            // Fallback for older browsers
+            const controller = new AbortController();
+            setTimeout(() => controller.abort(), 10000);
+            timeoutSignal = controller.signal;
+          }
+          
+          return fetch(url, {
+            ...options,
+            signal: options.signal || timeoutSignal,
+          });
+        },
+      },
     })
   : null;
 

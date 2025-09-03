@@ -42,11 +42,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     try {
       const startTime = Date.now();
-      const { data, error } = await supabase
+      
+      // Add timeout to prevent hanging
+      const profilePromise = supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
+
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Profile loading timeout after 10 seconds')), 10000)
+      );
+
+      console.log('👤 AuthProvider: Executing profile query with 10s timeout...');
+      const { data, error } = await Promise.race([profilePromise, timeoutPromise]) as any;
       
       const duration = Date.now() - startTime;
       console.log('👤 AuthProvider: Profile query response', { 
@@ -58,6 +67,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error && error.code !== 'PGRST116') {
         // PGRST116 is "not found" error
         console.error('👤 AuthProvider: Error loading profile:', error);
+        
+        // On timeout or error, create a default profile to unblock the app
+        if (error.message?.includes('timeout')) {
+          console.log('👤 AuthProvider: Profile loading timed out, creating default profile');
+          const defaultProfile = {
+            id: userId,
+            full_name: null,
+            avatar_url: null,
+            updated_at: new Date().toISOString(),
+          };
+          setProfile(defaultProfile);
+        }
         return;
       }
 
@@ -77,12 +98,51 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } catch (error) {
       console.error('👤 AuthProvider: Exception loading profile:', error);
+      
+      // On any exception, create a default profile to unblock the app
+      console.log('👤 AuthProvider: Creating default profile due to exception');
+      const defaultProfile = {
+        id: userId,
+        full_name: null,
+        avatar_url: null,
+        updated_at: new Date().toISOString(),
+      };
+      setProfile(defaultProfile);
     }
   };
 
   const refreshProfile = async () => {
     if (user) {
       await loadProfile(user.id);
+    }
+  };
+
+  const clearStaleAuth = async () => {
+    console.log('🔐 AuthProvider: Clearing stale auth data...');
+    try {
+      if (supabase) {
+        // Sign out to clear Supabase session
+        await supabase.auth.signOut({ scope: 'local' });
+      }
+      
+      // Clear localStorage items that might contain stale tokens
+      if (typeof window !== 'undefined') {
+        const keysToRemove = Object.keys(localStorage).filter(key => 
+          key.includes('supabase') || 
+          key.includes('sb-') ||
+          key.includes('auth-token') ||
+          key.includes('finance-tracker')
+        );
+        
+        keysToRemove.forEach(key => {
+          console.log('🔐 AuthProvider: Removing localStorage key:', key);
+          localStorage.removeItem(key);
+        });
+      }
+      
+      console.log('🔐 AuthProvider: Stale auth data cleared successfully');
+    } catch (error) {
+      console.error('🔐 AuthProvider: Error clearing stale auth:', error);
     }
   };
 
@@ -97,14 +157,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     let mounted = true;
 
-    // Get initial session
+    // Get initial session with timeout and stale token handling
     const initializeAuth = async () => {
       try {
         console.log('🔐 AuthProvider: Getting initial session...');
         if (!supabase) return;
         
         const startTime = Date.now();
-        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        // Add timeout to session retrieval to catch hanging tokens
+        const sessionPromise = supabase.auth.getSession();
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Session retrieval timeout - likely stale token')), 8000)
+        );
+        
+        const { data: { session }, error } = await Promise.race([sessionPromise, timeoutPromise]) as any;
         const duration = Date.now() - startTime;
         
         console.log('🔐 AuthProvider: Session response received', { 
@@ -119,12 +186,75 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return;
         }
         
+        // Check if session is stale/invalid
+        if (session?.user && session.expires_at) {
+          const expiresAt = new Date(session.expires_at * 1000);
+          const now = new Date();
+          const timeUntilExpiry = expiresAt.getTime() - now.getTime();
+          
+          console.log('🔐 AuthProvider: Session expiry check', {
+            expiresAt: expiresAt.toISOString(),
+            now: now.toISOString(),
+            timeUntilExpiry: `${Math.round(timeUntilExpiry / 1000)}s`,
+            isExpired: timeUntilExpiry <= 0
+          });
+          
+          if (timeUntilExpiry <= 0) {
+            console.warn('🔐 AuthProvider: Session token expired, trying refresh first...');
+            
+            try {
+              // Try to refresh the session before clearing
+              const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+              
+              if (refreshData.session && !refreshError) {
+                console.log('🔐 AuthProvider: Session refreshed successfully');
+                setSession(refreshData.session);
+                setUser(refreshData.session.user);
+                
+                if (refreshData.session.user) {
+                  await loadProfile(refreshData.session.user.id);
+                }
+                
+                if (mounted) {
+                  setLoading(false);
+                }
+                return;
+              } else {
+                console.warn('🔐 AuthProvider: Session refresh failed, clearing stale session');
+              }
+            } catch (refreshError) {
+              console.warn('🔐 AuthProvider: Session refresh exception, clearing stale session:', refreshError);
+            }
+            
+            await clearStaleAuth();
+            setSession(null);
+            setUser(null);
+            setProfile(null);
+            if (mounted) {
+              setLoading(false);
+            }
+            return;
+          }
+        }
+        
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
           console.log('🔐 AuthProvider: Loading profile for user:', session.user.id);
-          await loadProfile(session.user.id);
+          try {
+            await loadProfile(session.user.id);
+          } catch (error) {
+            console.error('🔐 AuthProvider: Profile loading failed in initialization:', error);
+            // If profile loading fails with a valid session, it might be a token issue
+            if (error instanceof Error && error.message.includes('timeout')) {
+              console.warn('🔐 AuthProvider: Profile timeout suggests stale token, clearing auth');
+              await clearStaleAuth();
+              setSession(null);
+              setUser(null);
+              setProfile(null);
+            }
+          }
         } else {
           console.log('🔐 AuthProvider: No user session found');
         }
@@ -135,6 +265,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       } catch (error) {
         console.error('🔐 AuthProvider: Error initializing auth:', error);
+        
+        // If we get a timeout or other error, likely due to stale token
+        if (error instanceof Error && error.message.includes('timeout')) {
+          console.warn('🔐 AuthProvider: Session timeout detected, clearing potentially stale auth tokens');
+          await clearStaleAuth();
+          setSession(null);
+          setUser(null);
+          setProfile(null);
+        }
+        
         if (mounted) {
           setLoading(false);
         }
@@ -158,7 +298,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         if (session?.user) {
           console.log('🔐 AuthProvider: Loading profile for user (auth change):', session.user.id);
-          await loadProfile(session.user.id);
+          try {
+            await loadProfile(session.user.id);
+          } catch (error) {
+            console.error('🔐 AuthProvider: Profile loading failed in auth change:', error);
+          }
           
           // Clear any old finance data from localStorage to prevent conflicts
           if (typeof window !== 'undefined') {
@@ -169,8 +313,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setProfile(null);
         }
         
-        // Only set loading to false if this is not the initial load
-        if (event !== 'INITIAL_SESSION' && mounted) {
+        // Always set loading to false after processing auth change
+        if (mounted) {
           console.log('🔐 AuthProvider: Setting loading to false (auth change complete)');
           setLoading(false);
         }
@@ -180,9 +324,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     console.log('🔐 AuthProvider: Starting auth initialization...');
     initializeAuth();
 
+    // Safety timeout - force loading to false after 15 seconds (reduced since we handle stale tokens)
+    const safetyTimeout = setTimeout(() => {
+      if (mounted && loading) {
+        console.warn('🔐 AuthProvider: Safety timeout triggered - forcing loading to false after 15s');
+        clearStaleAuth();
+        setLoading(false);
+      }
+    }, 15000);
+
     return () => {
       console.log('🔐 AuthProvider: Cleanup - unmounting');
       mounted = false;
+      clearTimeout(safetyTimeout);
       subscription.unsubscribe();
     };
   }, []);
