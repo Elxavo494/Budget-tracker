@@ -4,7 +4,6 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { supabase } from '@/lib/supabase';
-import { defaultData } from '@/lib/storage';
 import { uploadTransactionIcon, deleteTransactionIcon } from '@/lib/image-utils';
 import { 
   FinanceData, 
@@ -174,11 +173,15 @@ export const SupabaseFinanceProvider: React.FC<{ children: React.ReactNode }> = 
           
           if (functionError) {
             // Fallback to direct insert
-            const defaultCategories = defaultData.categories.map(cat => ({
-              name: cat.name,
-              color: cat.color,
-              user_id: user.id,
-            }));
+            const defaultCategories = [
+              { name: 'Food', color: '#ef4444', user_id: user.id },
+              { name: 'Housing', color: '#3b82f6', user_id: user.id },
+              { name: 'Insurance', color: '#8b5cf6', user_id: user.id },
+              { name: 'Transport', color: '#10b981', user_id: user.id },
+              { name: 'Sports', color: '#f59e0b', user_id: user.id },
+              { name: 'Fun', color: '#ec4899', user_id: user.id },
+              { name: 'Other', color: '#6b7280', user_id: user.id },
+            ];
             
             const { data: newCategories, error: insertError } = await supabase
               .from('categories')
