@@ -52,10 +52,14 @@ export const SupabaseFinanceProvider: React.FC<{ children: React.ReactNode }> = 
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   // Load all data when user is authenticated
   useEffect(() => {
-    if (authLoading) return;
+    if (authLoading) {
+      setLoading(true);
+      return;
+    }
     
     if (!isSupabaseConfigured) {
       setLoading(false);
@@ -87,19 +91,26 @@ export const SupabaseFinanceProvider: React.FC<{ children: React.ReactNode }> = 
       setLoading(true);
       setError(null);
 
-      const [
-        categoriesResult,
-        recurringIncomesResult,
-        recurringExpensesResult,
-        oneTimeIncomesResult,
-        oneTimeExpensesResult,
-      ] = await Promise.all([
+      // Add timeout to prevent hanging
+      const dataPromise = Promise.all([
         supabase.from('categories').select('*').order('name'),
         supabase.from('recurring_incomes').select('*').order('created_at', { ascending: false }),
         supabase.from('recurring_expenses').select('*').order('created_at', { ascending: false }),
         supabase.from('one_time_incomes').select('*').order('date', { ascending: false }),
         supabase.from('one_time_expenses').select('*').order('date', { ascending: false }),
       ]);
+
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Data loading timeout')), 15000)
+      );
+
+      const [
+        categoriesResult,
+        recurringIncomesResult,
+        recurringExpensesResult,
+        oneTimeIncomesResult,
+        oneTimeExpensesResult,
+      ] = await Promise.race([dataPromise, timeoutPromise]) as any;
 
       if (categoriesResult.error) throw categoriesResult.error;
       if (recurringIncomesResult.error) throw recurringIncomesResult.error;
@@ -212,8 +223,22 @@ export const SupabaseFinanceProvider: React.FC<{ children: React.ReactNode }> = 
         oneTimeIncomes: transformOneTimeIncomes(oneTimeIncomesResult.data || []),
         oneTimeExpenses: transformOneTimeExpenses(oneTimeExpensesResult.data || []),
       });
+      
+      // Reset retry count on successful load
+      setRetryCount(0);
     } catch (err: any) {
-      setError(err.message);
+      console.error('Error loading finance data:', err);
+      setError(err.message || 'Failed to load financial data');
+      
+      // Auto-retry on timeout or network errors (max 2 retries)
+      if (retryCount < 2 && (err.message?.includes('timeout') || err.message?.includes('network'))) {
+        setRetryCount(prev => prev + 1);
+        setTimeout(() => {
+          console.log(`Retrying data load (attempt ${retryCount + 2}/3)...`);
+          loadAllData();
+        }, 2000);
+        return;
+      }
     } finally {
       setLoading(false);
     }

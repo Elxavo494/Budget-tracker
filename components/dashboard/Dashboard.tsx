@@ -97,6 +97,7 @@ export const Dashboard: React.FC = () => {
         <div className="text-center space-y-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
           <p className="text-muted-foreground font-medium">Loading your financial data...</p>
+          <p className="text-xs text-muted-foreground/70">This should only take a moment</p>
         </div>
       </div>
     );

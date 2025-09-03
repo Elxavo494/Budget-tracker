@@ -75,8 +75,10 @@ export const AccountPage: React.FC = () => {
       setFullName(contextProfile.full_name || '');
       setAvatarUrl(contextProfile.avatar_url || '');
       setLoading(false);
-    } else if (user) {
+    } else if (user && !loading) {
       loadProfile();
+    } else if (!user) {
+      setLoading(false);
     }
   }, [user, contextProfile, loadProfile]);
 
