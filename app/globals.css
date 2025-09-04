@@ -117,7 +117,7 @@
   }
   
   .glass-card {
-    @apply bg-white/70 dark:bg-slate-900/50 backdrop-blur-xl border border-white/30 dark:border-slate-700/60 shadow-sm dark:shadow-xl;
+    @apply bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl border border-white/30 dark:border-slate-700/60 shadow-sm dark:shadow-xl;
   }
   
   /* Modern gradients - purple theme */
@@ -273,7 +273,6 @@
     opacity: 1;
     z-index: -10;
     pointer-events: none;
-    filter: blur(1px);
 
     &::before{
       content: '';
@@ -305,7 +304,7 @@
     opacity: 0.8;
     z-index: -10;
     pointer-events: none;
-    filter: blur(1px);
+
 
     &::before{
       content: '';
