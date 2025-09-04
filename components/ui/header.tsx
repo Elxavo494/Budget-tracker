@@ -78,6 +78,14 @@ export const Header: React.FC = () => {
                 priority
               />
             </Link>
+            <div className="flex flex-col leading-tight min-w-0">
+              <span className={`${isScrolled ? 'text-xs' : 'text-sm'} font-semibold text-slate-900 dark:text-slate-100 truncate uppercase`}>
+               <b>Finance Tracker</b>
+              </span>
+              <span className={`${isScrolled ? 'text-xs' : 'text-xs'} text-slate-600 dark:text-slate-400 truncate`}>
+                Track your expenses
+              </span>
+            </div>
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

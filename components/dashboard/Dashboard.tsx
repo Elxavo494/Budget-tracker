@@ -185,7 +185,7 @@ export const Dashboard: React.FC = () => {
     <PullToRefresh onRefresh={handleRefresh}>
       <div className="min-h-screen gradient-background relative">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-chart-2/5 pointer-events-none" />
-        <div className="relative max-w-[1680px] mx-auto px-4 py-8">
+        <div className="relative max-w-[1680px] mx-auto px-4 py-12">
         {/* New Header Design */}
         <div className="mb-3">
           {/* Large Amount Display */}
