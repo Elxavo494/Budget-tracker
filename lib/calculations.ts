@@ -130,6 +130,27 @@ export const calculateExpensesByCategory = (
   })).filter(item => item.value > 0);
 };
 
+export const calculateWeeksRemainingInMonth = (selectedDate: Date): number => {
+  const today = new Date();
+  const monthEnd = endOfMonth(selectedDate);
+  
+  // If we're looking at a past month, return 0
+  if (selectedDate < startOfMonth(today)) {
+    return 0;
+  }
+  
+  // If we're looking at a future month, return the total weeks in that month
+  if (selectedDate > endOfMonth(today)) {
+    const monthStart = startOfMonth(selectedDate);
+    const totalDays = Math.ceil((monthEnd.getTime() - monthStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    return Math.max(1, Math.ceil(totalDays / 7));
+  }
+  
+  // For current month, calculate remaining weeks from today
+  const remainingDays = Math.ceil((monthEnd.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+  return Math.max(1, Math.ceil(remainingDays / 7));
+};
+
 export const formatCurrency = (amount: number): string => {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',

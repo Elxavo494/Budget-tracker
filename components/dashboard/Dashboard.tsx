@@ -11,6 +11,7 @@ import {
   calculateOneTimeIncomeForMonth,
   calculateOneTimeExpensesForMonth,
   calculateExpensesByCategory,
+  calculateWeeksRemainingInMonth,
   formatCurrency
 } from '@/lib/calculations';
 import { StatsCards } from './StatsCards';
@@ -151,6 +152,10 @@ export const Dashboard: React.FC = () => {
   const monthlyBudget = totalIncome;
   const leftToSpend = monthlyBudget - totalExpenses;
   const spendingProgress = totalIncome > 0 ? (totalExpenses / totalIncome) * 100 : 0;
+  
+  // Calculate weekly spending amount
+  const weeksRemaining = calculateWeeksRemainingInMonth(selectedDate);
+  const leftToSpendPerWeek = weeksRemaining > 0 ? leftToSpend / weeksRemaining : 0;
 
   const expensesByCategory = calculateExpensesByCategory(
     data.recurringExpenses,
@@ -190,10 +195,15 @@ export const Dashboard: React.FC = () => {
         <div className="mb-3">
           {/* Large Amount Display */}
           <div className="text-center mb-3">
-            <div className="text-7xl sm:text-8xl font-black text-shimmer mb-2 tracking-tighter">
-              {formatCurrency(leftToSpend)}
+            <div className="relative inline-block">
+              <div className="text-7xl sm:text-8xl font-black text-gray-100 mb-2 tracking-tighter w-max mx-auto">
+                {formatCurrency(leftToSpend)}
+              </div>
+              <p className="absolute -top-4 -right-0 text-gray-100/70 dark:text-gray-100/70 text-xs font-normal whitespace-nowrap">
+                {formatCurrency(leftToSpendPerWeek)}/week
+              </p>
             </div>
-            <p className="text-gray-900 dark:text-gray-100 text-base font-medium">
+            <p className="text-gray-100 dark:text-gray-100 text-base font-medium">
               Left to spend this month
             </p>
           </div>
@@ -204,9 +214,9 @@ export const Dashboard: React.FC = () => {
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="px-3 py-1.5 gap-2 h-auto hover:bg-slate-100 dark:hover:bg-slate-800/50"
+                  className="px-3 py-1.5 gap-2 h-auto glass-card hover:bg-slate-100 dark:hover:bg-slate-800/50"
                 >
-                  <span className="font-medium text-slate-600 dark:text-slate-400 text-sm">
+                  <span className="font-medium text-slate-600 dark:text-gray-100 text-sm">
                     {format(selectedDate, 'MMMM yyyy')}
                   </span>
                   <ChevronDown className="h-3 w-3 text-slate-400 dark:text-slate-500" />

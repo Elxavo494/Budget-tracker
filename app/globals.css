@@ -117,14 +117,12 @@
   }
   
   .glass-card {
-    @apply bg-white/90 dark:bg-slate-900/50 backdrop-blur-xl border border-white/30 dark:border-slate-700/60 shadow-sm dark:shadow-xl;
+    @apply bg-white/70 dark:bg-slate-900/50 backdrop-blur-xl border border-white/30 dark:border-slate-700/60 shadow-sm dark:shadow-xl;
   }
   
   /* Modern gradients - purple theme */
   .gradient-primary {
-    background: linear-gradient(135deg, 
-      hsl(var(--primary)) 0%, 
-      hsl(var(--chart-5)) 100%);
+    background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 25%, #f97316 75%, #eab308 100%);
   }
   
   .gradient-success {
@@ -200,9 +198,9 @@
   .text-shimmer {
     background: linear-gradient(
       110deg,
-      hsl(var(--foreground)) 45%,
-      hsl(var(--primary)) 55%,
-      hsl(var(--foreground)) 65%
+      white 45%,
+      #f88670 55%,
+      white 65%
     );
     background-size: 200% 100%;
     -webkit-background-clip: text;
@@ -211,11 +209,15 @@
     animation: shimmer 8s ease-in-out infinite;
   }
   
-  @keyframes shimmer {
-    0%, 90% { background-position: 200% 0; }
-    50% { background-position: -200% 0; }
-    100% { background-position: 200% 0; }
+  .dark .text-shimmer {
+    background: linear-gradient(
+      110deg,
+      hsl(var(--foreground)) 45%,
+      hsl(var(--primary)) 55%,
+      hsl(var(--foreground)) 65%
+    );
   }
+
   
   /* Responsive utilities */
   .mobile-padding {
