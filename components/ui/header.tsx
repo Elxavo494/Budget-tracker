@@ -55,12 +55,12 @@ export const Header: React.FC = () => {
       fixed top-0 left-0 right-0 z-50 transition-smooth
       ${isScrolled 
         ? 'glass-card shadow-sm' 
-        : 'gradient-background border-b border-border'
+        : 'glass-card shadow-sm border-b border-border'
       }
     `}>
       <div className={`max-w-[1680px] mx-auto mobile-padding transition-smooth ${isScrolled ? 'py-3' : 'py-4'}`}>
         <div className="flex justify-between items-center">
-          <div className="flex items-center flex-1 min-w-0">
+          <div className="flex items-center flex-1 min-w-0 -ml-2">
             <Link 
               href="/" 
               className="inline-block hover:opacity-80 transition-opacity duration-200 ease-in-out"

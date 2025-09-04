@@ -12,7 +12,7 @@ interface SpendingInsightsProps {
 export const SpendingInsights: React.FC<SpendingInsightsProps> = ({ insights }) => {
   if (insights.length === 0) {
     return (
-      <Card className="dark:bg-slate-800 dark:border-slate-700">
+      <Card className="glass-card">
         <CardHeader>
           <CardTitle className="text-lg sm:text-xl font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
             <Info className="h-5 w-5" />
@@ -59,7 +59,7 @@ export const SpendingInsights: React.FC<SpendingInsightsProps> = ({ insights }) 
   };
 
   return (
-    <Card className="dark:bg-slate-800 dark:border-slate-700">
+    <Card className="glass-card">
       <CardHeader>
         <CardTitle className="text-lg sm:text-xl font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
           <Info className="h-5 w-5" />

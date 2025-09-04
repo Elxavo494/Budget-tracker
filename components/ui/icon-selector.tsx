@@ -165,7 +165,7 @@ export const IconSelector: React.FC<IconSelectorProps> = ({
                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[400px] p-0" align="start">
+            <PopoverContent className="w-[95vw] max-w-[400px] p-0" align="start">
               <div className="rounded-lg border shadow-md">
                 {/* Search Input */}
                 <div className="p-3 border-b">
@@ -173,12 +173,12 @@ export const IconSelector: React.FC<IconSelectorProps> = ({
                     placeholder="Search brands..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="h-9"
+                    className="h-10 text-base"
                   />
                 </div>
 
                 {/* Scrollable List */}
-                <div className="max-h-[300px] overflow-y-scroll scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                <div className="max-h-[50vh] min-h-[200px] overflow-y-auto custom-scrollbar">
                   {Object.keys(groupedIcons).length === 0 ? (
                     <div className="p-4 text-center text-gray-500 text-sm">
                       No brands found.
@@ -191,7 +191,7 @@ export const IconSelector: React.FC<IconSelectorProps> = ({
                           {/* Category Header */}
                           <button
                             onClick={() => toggleCategory(category)}
-                            className="w-full flex items-center gap-2 px-3 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border-b"
+                            className="w-full flex items-center gap-2 px-3 py-3 sm:py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border-b min-h-[44px] sm:min-h-0"
                           >
                             {isCollapsed ? (
                               <ChevronRight className="w-3 h-3" />
@@ -208,7 +208,7 @@ export const IconSelector: React.FC<IconSelectorProps> = ({
                                 <button
                                   key={icon.id}
                                   onClick={() => handlePresetSelect(icon.id)}
-                                  className="w-full flex items-center gap-3 p-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 border-b border-gray-100 dark:border-gray-700"
+                                  className="w-full flex items-center gap-3 p-3 sm:p-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 border-b border-gray-100 dark:border-gray-700 min-h-[48px] sm:min-h-0"
                                 >
                                   <img 
                                     src={getLogoUrl(icon.domain)} 
@@ -262,7 +262,7 @@ export const IconSelector: React.FC<IconSelectorProps> = ({
               )}
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="w-[95vw] max-w-md">
             <DialogHeader>
               <DialogTitle>Upload Custom Icon</DialogTitle>
             </DialogHeader>
@@ -276,13 +276,18 @@ export const IconSelector: React.FC<IconSelectorProps> = ({
                 disabled={disabled}
               />
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={handleCustomIconCancel}>
+            <DialogFooter className="flex flex-col-reverse sm:flex-row gap-3 sm:gap-2">
+              <Button 
+                variant="outline" 
+                onClick={handleCustomIconCancel}
+                className="w-full sm:w-auto h-12 sm:h-10 text-base sm:text-sm"
+              >
                 Cancel
               </Button>
               <Button 
                 onClick={handleCustomIconSave}
                 disabled={!tempCustomIcon && !tempCustomFile}
+                className="w-full sm:w-auto h-12 sm:h-10 text-base sm:text-sm font-semibold"
               >
                 Save Icon
               </Button>

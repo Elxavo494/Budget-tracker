@@ -218,8 +218,8 @@ export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
 
   const renderTransaction = (transaction: TransactionItem) => {
     const isIncome = transaction.type === 'income';
-    const bgColor = isIncome ? 'bg-green-50 dark:bg-green-900/10' : 'bg-red-50 dark:bg-red-900/10';
-    const borderColor = isIncome ? 'border-green-100 dark:border-green-800' : 'border-red-100 dark:border-red-800';
+    const bgColor = isIncome ? 'bg-green-50/70 dark:bg-green-950/30' : 'bg-red-50/70 dark:bg-red-950/30';
+    const borderColor = isIncome ? 'border-green-200/60 dark:border-green-800/60' : 'border-red-200/60 dark:border-red-800/60';
     
     const originalTransaction = transaction.subtype === 'recurring' 
       ? (isIncome 
@@ -235,22 +235,22 @@ export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
     return (
       <div
         key={transaction.id}
-        className={`flex items-center gap-3 p-3 sm:p-4 rounded-xl border ${bgColor} ${borderColor} transition-all duration-200`}
+        className={`flex items-center gap-3 p-3 sm:p-4 rounded-xl border ${bgColor} ${borderColor} transition-all duration-200 hover:shadow-sm dark:hover:shadow-lg`}
       >
         {/* Avatar with icon or first letter */}
-        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white dark:bg-gray-700 flex items-center justify-center flex-shrink-0 border-2 border-white dark:border-gray-600 shadow-sm overflow-hidden">
+        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center flex-shrink-0 border-2 border-white/60 dark:border-slate-600/60 shadow-sm overflow-hidden">
           {renderTransactionIcon(transaction)}
         </div>
 
         {/* Transaction Details */}
         <div className="flex-1 min-w-0">
           <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-            <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate text-sm sm:text-base">
+            <h3 className="font-semibold text-slate-900 dark:text-slate-100 truncate text-sm sm:text-base">
               {transaction.name}
             </h3>
             <div className="flex items-center gap-2 flex-wrap">
               {transaction.subtype === 'recurring' && (
-                <Badge variant="outline" className="text-xs px-1.5 py-0.5 rounded-md border font-normal text-gray-600 dark:text-gray-400">
+                <Badge variant="outline" className="text-xs px-1.5 py-0.5 rounded-md border font-normal text-slate-600 dark:text-slate-400">
                   {transaction.recurrence}
                 </Badge>
               )}
@@ -269,11 +269,11 @@ export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
               )}
             </div>
           </div>
-          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
             {transaction.subtype === 'recurring' 
               ? `Since ${format(new Date(transaction.startDate!), 'MMM yyyy')}`
               : format(new Date(transaction.date), 'MMM dd')}
-            <span className="text-xs text-gray-400 dark:text-gray-500 font-light ml-1">
+            <span className="text-xs text-slate-400 dark:text-slate-500 font-light ml-1">
               / {transaction.subtype === 'recurring' ? transaction.recurrence : 'one-time'}
             </span>
           </p>
@@ -355,7 +355,7 @@ export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <Card className="shadow-sm hover:shadow-md transition-shadow duration-200 dark:bg-slate-800 dark:border-slate-700">
+      <Card className="shadow-sm hover:shadow-md transition-shadow duration-200 glass-card">
         <CardContent className="p-4 sm:p-6">
           <div className="flex items-center justify-between mb-4 sm:mb-6">
             <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100">Transactions</h2>

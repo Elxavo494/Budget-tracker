@@ -1,18 +1,23 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { FloatingInput } from '@/components/ui/floating-input';
+import { FloatingSelect } from '@/components/ui/floating-select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { IconSelector } from '@/components/ui/icon-selector';
-import { Plus, Edit } from 'lucide-react';
+import { Plus, Edit, Camera } from 'lucide-react';
 import { RecurringExpense, OneTimeExpense, RecurrenceType } from '@/types';
 import { useSupabaseFinance } from '@/contexts/SupabaseFinanceContext';
 import { format } from 'date-fns';
+import { extractReceiptFieldsFromImage } from '@/lib/receipt-ocr';
+import { suggestCategory } from '@/lib/smart-categorization';
+import { inferPresetIconId } from '@/lib/merchant-inference';
 
 interface UnifiedExpenseFormProps {
   recurringExpense?: RecurringExpense;
@@ -30,6 +35,8 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
   const { data, addRecurringExpense, updateRecurringExpense, addOneTimeExpense, updateOneTimeExpense } = useSupabaseFinance();
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState(recurringExpense ? 'recurring' : oneTimeExpense ? 'one-time' : 'one-time');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isScanning, setIsScanning] = useState(false);
   
   const [recurringFormData, setRecurringFormData] = useState({
     name: recurringExpense?.name || '',
@@ -61,6 +68,61 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
     presetIconId: oneTimeExpense?.presetIconId || ''
   });
   const [oneTimeIconFile, setOneTimeIconFile] = useState<File | undefined>();
+
+  const handleScanReceiptClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleReceiptSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setIsScanning(true);
+      const result = await extractReceiptFieldsFromImage(file);
+      // Name/merchant
+      const merchant = result.merchant?.trim();
+      if (activeTab === 'one-time') {
+        setOneTimeFormData(prev => ({
+          ...prev,
+          name: merchant && (!prev.name || prev.name.length < 2) ? merchant : prev.name,
+          amount: typeof result.total === 'number' ? String(result.total.toFixed(2)) : prev.amount,
+          date: result.date || prev.date,
+        }));
+        // Category inference
+        const suggested = suggestCategory(merchant || oneTimeFormData.name, data.categories);
+        if (suggested) {
+          setOneTimeFormData(prev => ({ ...prev, categoryId: suggested.id }));
+        }
+        // Icon inference
+        const iconId = inferPresetIconId(merchant || oneTimeFormData.name);
+        if (iconId) {
+          setOneTimeIconData(prev => ({ ...prev, iconType: 'preset', presetIconId: iconId }));
+        }
+      } else {
+        setRecurringFormData(prev => ({
+          ...prev,
+          name: merchant && (!prev.name || prev.name.length < 2) ? merchant : prev.name,
+          amount: typeof result.total === 'number' ? String(result.total.toFixed(2)) : prev.amount,
+          startDate: result.date || prev.startDate,
+        }));
+        const suggested = suggestCategory(merchant || recurringFormData.name, data.categories);
+        if (suggested) {
+          setRecurringFormData(prev => ({ ...prev, categoryId: suggested.id }));
+        }
+        const iconId = inferPresetIconId(merchant || recurringFormData.name);
+        if (iconId) {
+          setRecurringIconData(prev => ({ ...prev, iconType: 'preset', presetIconId: iconId }));
+        }
+      }
+    } catch (err) {
+      console.error('Receipt OCR failed', err);
+      alert('Could not read the receipt. You can still fill the form manually.');
+    } finally {
+      setIsScanning(false);
+      // reset value so selecting the same file again triggers change
+      if (e.target) e.target.value = '';
+    }
+  };
 
   const handleRecurringSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -171,69 +233,78 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
       <DialogTrigger asChild>
         {trigger}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>
+      <DialogContent className="w-[95vw] max-w-lg sm:max-w-lg md:max-w-xl max-h-[90vh] overflow-y-auto rounded-xl">
+        <DialogHeader className="space-y-3 pb-4">
+          <DialogTitle className="text-xl sm:text-2xl">
             {(recurringExpense || oneTimeExpense) ? 'Edit Expense' : 'Add Expense'}
           </DialogTitle>
+          <DialogDescription className="text-sm sm:text-base text-muted-foreground">
+            Snap a receipt to auto-fill details. You can adjust anything before saving.
+          </DialogDescription>
         </DialogHeader>
         
         {!(recurringExpense || oneTimeExpense) ? (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="one-time">One-time</TabsTrigger>
-              <TabsTrigger value="recurring">Recurring</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 h-12 sm:h-10">
+              <TabsTrigger value="one-time" className="text-base sm:text-sm font-medium">One-time</TabsTrigger>
+              <TabsTrigger value="recurring" className="text-base sm:text-sm font-medium">Recurring</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="one-time">
-              <form onSubmit={handleOneTimeSubmit} className="space-y-4">
-                <div>
-                  <Label htmlFor="onetime-name">Name</Label>
-                  <Input
-                    id="onetime-name"
-                    value={oneTimeFormData.name}
-                    onChange={(e) => setOneTimeFormData({ ...oneTimeFormData, name: e.target.value })}
-                    placeholder="e.g., Padel session"
-                    required
+            <TabsContent value="one-time" className="mt-3">
+              <form onSubmit={handleOneTimeSubmit} className="space-y-5 sm:space-y-6">
+
+              <div className="w-full">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={handleScanReceiptClick} 
+                    disabled={isScanning}
+                    className="w-full h-12 text-base font-medium"
+                  >
+                    <Camera className="h-5 w-5 mr-3" /> 
+                    {isScanning ? 'Scanning…' : 'Scan receipt'}
+                  </Button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleReceiptSelected}
+                    className="hidden"
                   />
                 </div>
                 
-                <div>
-                  <Label htmlFor="onetime-amount">Amount (€)</Label>
-                  <Input
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-4">
+                  <FloatingInput
+                    id="onetime-name"
+                    label="Name"
+                    value={oneTimeFormData.name}
+                    onChange={(e) => setOneTimeFormData({ ...oneTimeFormData, name: e.target.value })}
+                    required
+                  />
+                  <FloatingInput
                     id="onetime-amount"
+                    label="Amount (€)"
                     type="number"
                     step="0.01"
                     value={oneTimeFormData.amount}
                     onChange={(e) => setOneTimeFormData({ ...oneTimeFormData, amount: e.target.value })}
-                    placeholder="0.00"
                     required
                   />
-                </div>
-
-                <div>
-                  <Label>Category</Label>
-                  <Select 
-                    value={oneTimeFormData.categoryId} 
+                  <FloatingSelect
+                    label="Category"
+                    value={oneTimeFormData.categoryId}
                     onValueChange={(value) => setOneTimeFormData({ ...oneTimeFormData, categoryId: value })}
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {data.categories.map((category) => (
-                        <SelectItem key={category.id} value={category.id}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="onetime-date">Date</Label>
-                  <Input
+                    {data.categories.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </FloatingSelect>
+                  <FloatingInput
                     id="onetime-date"
+                    label="Date"
                     type="date"
                     value={oneTimeFormData.date}
                     onChange={(e) => setOneTimeFormData({ ...oneTimeFormData, date: e.target.value })}
@@ -250,103 +321,101 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
                   label="Expense Icon (optional)"
                 />
 
-                <div className="flex gap-2">
-                  <Button type="submit" className="flex-1">
-                    Add One-time Expense
-                  </Button>
+                <div className="flex flex-col-reverse sm:flex-row gap-3 sm:gap-2 pt-2">
                   <Button 
                     type="button" 
                     variant="outline" 
                     onClick={() => setOpen(false)}
+                    className="w-full sm:w-auto h-12 sm:h-10 text-base sm:text-sm"
                   >
                     Cancel
+                  </Button>
+                  <Button 
+                    type="submit" 
+                    className="w-full sm:flex-1 h-12 sm:h-10 text-base sm:text-sm font-semibold"
+                  >
+                    Add One-time Expense
                   </Button>
                 </div>
               </form>
             </TabsContent>
             
-            <TabsContent value="recurring">
-              <form onSubmit={handleRecurringSubmit} className="space-y-4">
-                <div>
-                  <Label htmlFor="recurring-name">Name</Label>
-                  <Input
+            <TabsContent value="recurring" className="mt-6">
+              <form onSubmit={handleRecurringSubmit} className="space-y-5 sm:space-y-6">
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-4">
+                  <FloatingInput
                     id="recurring-name"
+                    label="Name"
                     value={recurringFormData.name}
                     onChange={(e) => setRecurringFormData({ ...recurringFormData, name: e.target.value })}
-                    placeholder="e.g., House Loan"
                     required
                   />
-                </div>
-                
-                <div>
-                  <Label htmlFor="recurring-amount">Amount (€)</Label>
-                  <Input
+                  <FloatingInput
                     id="recurring-amount"
+                    label="Amount (€)"
                     type="number"
                     step="0.01"
                     value={recurringFormData.amount}
                     onChange={(e) => setRecurringFormData({ ...recurringFormData, amount: e.target.value })}
-                    placeholder="0.00"
                     required
                   />
-                </div>
-
-                <div>
-                  <Label>Category</Label>
-                  <Select 
-                    value={recurringFormData.categoryId} 
+                  <FloatingSelect
+                    label="Category"
+                    value={recurringFormData.categoryId}
                     onValueChange={(value) => setRecurringFormData({ ...recurringFormData, categoryId: value })}
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {data.categories.map((category) => (
-                        <SelectItem key={category.id} value={category.id}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label>Recurrence</Label>
-                  <Select 
-                    value={recurringFormData.recurrence} 
-                    onValueChange={(value: RecurrenceType) => 
-                      setRecurringFormData({ ...recurringFormData, recurrence: value })
+                    {data.categories.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </FloatingSelect>
+                  <FloatingSelect
+                    label="Recurrence"
+                    value={recurringFormData.recurrence}
+                    onValueChange={(value: string) => 
+                      setRecurringFormData({ ...recurringFormData, recurrence: value as RecurrenceType })
                     }
                   >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="weekly">Weekly</SelectItem>
-                      <SelectItem value="monthly">Monthly</SelectItem>
-                      <SelectItem value="yearly">Yearly</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="recurring-startDate">Start Date</Label>
-                  <Input
+                    <SelectItem value="weekly">Weekly</SelectItem>
+                    <SelectItem value="monthly">Monthly</SelectItem>
+                    <SelectItem value="yearly">Yearly</SelectItem>
+                  </FloatingSelect>
+                  <FloatingInput
                     id="recurring-startDate"
+                    label="Start Date"
                     type="date"
                     value={recurringFormData.startDate}
                     onChange={(e) => setRecurringFormData({ ...recurringFormData, startDate: e.target.value })}
                     required
                   />
-                </div>
-
-                <div>
-                  <Label htmlFor="recurring-endDate">End Date (Optional)</Label>
-                  <Input
+                  <FloatingInput
                     id="recurring-endDate"
+                    label="End Date (Optional)"
                     type="date"
                     value={recurringFormData.endDate}
                     onChange={(e) => setRecurringFormData({ ...recurringFormData, endDate: e.target.value })}
+                  />
+                </div>
+
+                <div className="w-full">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={handleScanReceiptClick} 
+                    disabled={isScanning}
+                    className="w-full h-12 text-base font-medium"
+                  >
+                    <Camera className="h-5 w-5 mr-3" /> 
+                    {isScanning ? 'Scanning…' : 'Scan receipt'}
+                  </Button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleReceiptSelected}
+                    className="hidden"
                   />
                 </div>
 
@@ -359,100 +428,82 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
                   label="Expense Icon (optional)"
                 />
 
-                <div className="flex gap-2">
-                  <Button type="submit" className="flex-1">
-                    Add Recurring Expense
-                  </Button>
+                <div className="flex flex-col-reverse sm:flex-row gap-3 sm:gap-2 pt-2">
                   <Button 
                     type="button" 
                     variant="outline" 
                     onClick={() => setOpen(false)}
+                    className="w-full sm:w-auto h-12 sm:h-10 text-base sm:text-sm"
                   >
                     Cancel
+                  </Button>
+                  <Button 
+                    type="submit" 
+                    className="w-full sm:flex-1 h-12 sm:h-10 text-base sm:text-sm font-semibold"
+                  >
+                    Add Recurring Expense
                   </Button>
                 </div>
               </form>
             </TabsContent>
           </Tabs>
         ) : recurringExpense ? (
-          <form onSubmit={handleRecurringSubmit} className="space-y-4">
-            <div>
-              <Label htmlFor="edit-recurring-name">Name</Label>
-              <Input
+          <form onSubmit={handleRecurringSubmit} className="space-y-5 sm:space-y-6">
+            <div className="space-y-5">
+              <FloatingInput
                 id="edit-recurring-name"
+                label="Name"
                 value={recurringFormData.name}
                 onChange={(e) => setRecurringFormData({ ...recurringFormData, name: e.target.value })}
-                placeholder="e.g., House Loan"
                 required
               />
-            </div>
-            
-            <div>
-              <Label htmlFor="edit-recurring-amount">Amount (€)</Label>
-              <Input
+              
+              <FloatingInput
                 id="edit-recurring-amount"
+                label="Amount (€)"
                 type="number"
                 step="0.01"
                 value={recurringFormData.amount}
                 onChange={(e) => setRecurringFormData({ ...recurringFormData, amount: e.target.value })}
-                placeholder="0.00"
                 required
               />
-            </div>
 
-            <div>
-              <Label>Category</Label>
-              <Select 
-                value={recurringFormData.categoryId} 
+              <FloatingSelect
+                label="Category"
+                value={recurringFormData.categoryId}
                 onValueChange={(value) => setRecurringFormData({ ...recurringFormData, categoryId: value })}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {data.categories.map((category) => (
-                    <SelectItem key={category.id} value={category.id}>
-                      {category.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                {data.categories.map((category) => (
+                  <SelectItem key={category.id} value={category.id}>
+                    {category.name}
+                  </SelectItem>
+                ))}
+              </FloatingSelect>
 
-            <div>
-              <Label>Recurrence</Label>
-              <Select 
-                value={recurringFormData.recurrence} 
+              <FloatingSelect
+                label="Recurrence"
+                value={recurringFormData.recurrence}
                 onValueChange={(value: RecurrenceType) => 
                   setRecurringFormData({ ...recurringFormData, recurrence: value })
                 }
               >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="weekly">Weekly</SelectItem>
-                  <SelectItem value="monthly">Monthly</SelectItem>
-                  <SelectItem value="yearly">Yearly</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+                <SelectItem value="weekly">Weekly</SelectItem>
+                <SelectItem value="monthly">Monthly</SelectItem>
+                <SelectItem value="yearly">Yearly</SelectItem>
+              </FloatingSelect>
 
-            <div>
-              <Label htmlFor="edit-recurring-startDate">Start Date</Label>
-              <Input
+              <FloatingInput
                 id="edit-recurring-startDate"
+                label="Start Date"
                 type="date"
                 value={recurringFormData.startDate}
                 onChange={(e) => setRecurringFormData({ ...recurringFormData, startDate: e.target.value })}
                 required
               />
-            </div>
 
-            <div>
-              <Label htmlFor="edit-recurring-endDate">End Date (Optional)</Label>
-              <Input
+              <FloatingInput
                 id="edit-recurring-endDate"
+                label="End Date (Optional)"
                 type="date"
                 value={recurringFormData.endDate}
                 onChange={(e) => setRecurringFormData({ ...recurringFormData, endDate: e.target.value })}
@@ -468,68 +519,59 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
               label="Expense Icon (optional)"
             />
 
-            <div className="flex gap-2">
-              <Button type="submit" className="flex-1">
-                Update Expense
-              </Button>
+            <div className="flex flex-col-reverse sm:flex-row gap-3 sm:gap-2 pt-2">
               <Button 
                 type="button" 
                 variant="outline" 
                 onClick={() => setOpen(false)}
+                className="w-full sm:w-auto h-12 sm:h-10 text-base sm:text-sm"
               >
                 Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                className="w-full sm:flex-1 h-12 sm:h-10 text-base sm:text-sm font-semibold"
+              >
+                Update Expense
               </Button>
             </div>
           </form>
         ) : (
-          <form onSubmit={handleOneTimeSubmit} className="space-y-4">
-            <div>
-              <Label htmlFor="edit-onetime-name">Name</Label>
-              <Input
+          <form onSubmit={handleOneTimeSubmit} className="space-y-5 sm:space-y-6">
+            <div className="space-y-5">
+              <FloatingInput
                 id="edit-onetime-name"
+                label="Name"
                 value={oneTimeFormData.name}
                 onChange={(e) => setOneTimeFormData({ ...oneTimeFormData, name: e.target.value })}
-                placeholder="e.g., Padel session"
                 required
               />
-            </div>
-            
-            <div>
-              <Label htmlFor="edit-onetime-amount">Amount (€)</Label>
-              <Input
+              
+              <FloatingInput
                 id="edit-onetime-amount"
+                label="Amount (€)"
                 type="number"
                 step="0.01"
                 value={oneTimeFormData.amount}
                 onChange={(e) => setOneTimeFormData({ ...oneTimeFormData, amount: e.target.value })}
-                placeholder="0.00"
                 required
               />
-            </div>
 
-            <div>
-              <Label>Category</Label>
-              <Select 
-                value={oneTimeFormData.categoryId} 
+              <FloatingSelect
+                label="Category"
+                value={oneTimeFormData.categoryId}
                 onValueChange={(value) => setOneTimeFormData({ ...oneTimeFormData, categoryId: value })}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {data.categories.map((category) => (
-                    <SelectItem key={category.id} value={category.id}>
-                      {category.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                {data.categories.map((category) => (
+                  <SelectItem key={category.id} value={category.id}>
+                    {category.name}
+                  </SelectItem>
+                ))}
+              </FloatingSelect>
 
-            <div>
-              <Label htmlFor="edit-onetime-date">Date</Label>
-              <Input
+              <FloatingInput
                 id="edit-onetime-date"
+                label="Date"
                 type="date"
                 value={oneTimeFormData.date}
                 onChange={(e) => setOneTimeFormData({ ...oneTimeFormData, date: e.target.value })}
@@ -546,16 +588,20 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
               label="Expense Icon (optional)"
             />
 
-            <div className="flex gap-2">
-              <Button type="submit" className="flex-1">
-                Update Expense
-              </Button>
+            <div className="flex flex-col-reverse sm:flex-row gap-3 sm:gap-2 pt-2">
               <Button 
                 type="button" 
                 variant="outline" 
                 onClick={() => setOpen(false)}
+                className="w-full sm:w-auto h-12 sm:h-10 text-base sm:text-sm"
               >
                 Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                className="w-full sm:flex-1 h-12 sm:h-10 text-base sm:text-sm font-semibold"
+              >
+                Update Expense
               </Button>
             </div>
           </form>

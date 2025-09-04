@@ -53,6 +53,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
+        <div className="pink-glow-background" />
+        <div className="pink-glow-background-small" />
         <Providers>
           <Header />
           <main className="pt-[72px]">

@@ -47,7 +47,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
   ];
 
   return (
-    <div className="mb-6 sm:mb-8">
+    <div className="mb-8 sm:mb-8">
       {/* Desktop: Centered grid layout */}
       <div className="hidden md:flex justify-center">
         <div className="grid grid-cols-3 gap-3 w-full">
@@ -55,32 +55,32 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
             const Icon = card.icon;
             const colorClasses = {
               green: {
-                bg: 'from-green-50 border-green-200',
-                title: 'text-green-800',
-                icon: 'text-green-600',
-                value: 'text-green-900',
-                subtitle: 'text-green-700'
+                bg: 'from-green-50 dark:from-green-950/50 border-green-200 dark:border-green-800/50',
+                title: 'text-green-800 dark:text-green-200',
+                icon: 'text-green-600 dark:text-green-400',
+                value: 'text-green-900 dark:text-green-100',
+                subtitle: 'text-green-700 dark:text-green-300'
               },
               red: {
-                bg: 'from-red-50 border-red-200',
-                title: 'text-red-800',
-                icon: 'text-red-600',
-                value: 'text-red-900',
-                subtitle: 'text-red-700'
+                bg: 'from-red-50 dark:from-red-950/50 border-red-200 dark:border-red-800/50',
+                title: 'text-red-800 dark:text-red-200',
+                icon: 'text-red-600 dark:text-red-400',
+                value: 'text-red-900 dark:text-red-100',
+                subtitle: 'text-red-700 dark:text-red-300'
               },
               blue: {
-                bg: 'from-blue-50 border-blue-200',
-                title: 'text-blue-800',
-                icon: 'text-blue-600',
-                value: 'text-blue-900',
-                subtitle: 'text-blue-700'
+                bg: 'from-blue-50 dark:from-blue-950/50 border-blue-200 dark:border-blue-800/50',
+                title: 'text-blue-800 dark:text-blue-200',
+                icon: 'text-blue-600 dark:text-blue-400',
+                value: 'text-blue-900 dark:text-blue-100',
+                subtitle: 'text-blue-700 dark:text-blue-300'
               },
               orange: {
-                bg: 'from-orange-50 border-orange-200',
-                title: 'text-orange-800',
-                icon: 'text-orange-600',
-                value: 'text-orange-900',
-                subtitle: 'text-orange-700'
+                bg: 'from-orange-50 dark:from-orange-950/50 border-orange-200 dark:border-orange-800/50',
+                title: 'text-orange-800 dark:text-orange-200',
+                icon: 'text-orange-600 dark:text-orange-400',
+                value: 'text-orange-900 dark:text-orange-100',
+                subtitle: 'text-orange-700 dark:text-orange-300'
               }
             };
 
@@ -128,32 +128,32 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
             const Icon = card.icon;
             const colorClasses = {
               green: {
-                bg: 'from-green-50 border-green-200',
-                title: 'text-green-800',
-                icon: 'text-green-600',
-                value: 'text-green-900',
-                subtitle: 'text-green-700'
+                bg: 'from-green-50 dark:from-green-950/50 border-green-200 dark:border-green-800/50',
+                title: 'text-green-800 dark:text-green-200',
+                icon: 'text-green-600 dark:text-green-400',
+                value: 'text-green-900 dark:text-green-100',
+                subtitle: 'text-green-700 dark:text-green-300'
               },
               red: {
-                bg: 'from-red-50 border-red-200',
-                title: 'text-red-800',
-                icon: 'text-red-600',
-                value: 'text-red-900',
-                subtitle: 'text-red-700'
+                bg: 'from-red-50 dark:from-red-950/50 border-red-200 dark:border-red-800/50',
+                title: 'text-red-800 dark:text-red-200',
+                icon: 'text-red-600 dark:text-red-400',
+                value: 'text-red-900 dark:text-red-100',
+                subtitle: 'text-red-700 dark:text-red-300'
               },
               blue: {
-                bg: 'from-blue-50 border-blue-200',
-                title: 'text-blue-800',
-                icon: 'text-blue-600',
-                value: 'text-blue-900',
-                subtitle: 'text-blue-700'
+                bg: 'from-blue-50 dark:from-blue-950/50 border-blue-200 dark:border-blue-800/50',
+                title: 'text-blue-800 dark:text-blue-200',
+                icon: 'text-blue-600 dark:text-blue-400',
+                value: 'text-blue-900 dark:text-blue-100',
+                subtitle: 'text-blue-700 dark:text-blue-300'
               },
               orange: {
-                bg: 'from-orange-50 border-orange-200',
-                title: 'text-orange-800',
-                icon: 'text-orange-600',
-                value: 'text-orange-900',
-                subtitle: 'text-orange-700'
+                bg: 'from-orange-50 dark:from-orange-950/50 border-orange-200 dark:border-orange-800/50',
+                title: 'text-orange-800 dark:text-orange-200',
+                icon: 'text-orange-600 dark:text-orange-400',
+                value: 'text-orange-900 dark:text-orange-100',
+                subtitle: 'text-orange-700 dark:text-orange-300'
               }
             };
 
@@ -191,8 +191,16 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
             opacity: 1;
           }
           
+          .dark .stats-swiper .swiper-pagination-bullet {
+            background: #4b5563;
+          }
+          
           .stats-swiper .swiper-pagination-bullet-active {
             background: #6366f1;
+          }
+          
+          .dark .stats-swiper .swiper-pagination-bullet-active {
+            background: #8b5cf6;
           }
         `}</style>
       </div>

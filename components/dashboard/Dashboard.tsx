@@ -183,23 +183,23 @@ export const Dashboard: React.FC = () => {
 
   return (
     <PullToRefresh onRefresh={handleRefresh}>
-      <div className="min-h-screen gradient-background relative">
+      <div className="min-h-screen relative">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-chart-2/5 pointer-events-none" />
-        <div className="relative max-w-[1680px] mx-auto px-4 py-12">
+        <div className="relative max-w-[1680px] mx-auto px-4 py-12 pt-16">
         {/* New Header Design */}
         <div className="mb-3">
           {/* Large Amount Display */}
           <div className="text-center mb-3">
-            <div className="text-6xl sm:text-7xl font-bold text-shimmer mb-2 tracking-tight">
+            <div className="text-7xl sm:text-8xl font-black text-shimmer mb-2 tracking-tighter">
               {formatCurrency(leftToSpend)}
             </div>
-            <p className="text-muted-foreground text-base font-medium">
+            <p className="text-gray-900 dark:text-gray-100 text-base font-medium">
               Left to spend this month
             </p>
           </div>
 
            {/* Month Selector */}
-           <div className="flex justify-center mb-6">
+           <div className="flex justify-center mb-14">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -346,7 +346,7 @@ export const Dashboard: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mt-6 sm:mt-8">
           <SpendingInsights insights={spendingInsights} />
           
-          <Card className="lg:col-span-2 dark:bg-slate-800 dark:border-slate-700 order-2 lg:order-1">
+          <Card className="lg:col-span-2 glass-card order-2 lg:order-1">
             <CardHeader>
               <CardTitle className="text-lg sm:text-xl font-semibold text-slate-800 dark:text-slate-200">Expenses by Category</CardTitle>
             </CardHeader>
@@ -355,7 +355,7 @@ export const Dashboard: React.FC = () => {
             </CardContent>
           </Card>
 
-          <Card className="dark:bg-slate-800 dark:border-slate-700 order-1 lg:order-2">
+          <Card className="glass-card order-1 lg:order-2">
             <CardHeader>
               <CardTitle className="text-lg sm:text-xl font-semibold text-slate-800 dark:text-slate-200">Monthly Summary</CardTitle>
             </CardHeader>
@@ -392,7 +392,7 @@ export const Dashboard: React.FC = () => {
 
         {/* Mobile-Friendly Action Buttons */}
         <div className="fixed bottom-4 w-fit mx-auto left-1/2 -translate-x-1/2 sm:bottom-6 z-50">
-          <div className="flex items-center justify-center gap-3 sm:gap-4 glass rounded-full shadow-sm px-4 sm:px-4 py-3 sm:py-3 max-w-sm mx-auto sm:max-w-none">
+          <div className="flex items-center justify-center gap-3 sm:gap-4 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-white/40 dark:border-slate-700/60 rounded-full shadow-lg dark:shadow-2xl px-4 sm:px-4 py-3 sm:py-3 max-w-sm mx-auto sm:max-w-none">
             <UnifiedIncomeForm>
               <Button variant="income" size="lg" className="rounded-full w-14 h-14 sm:w-14 sm:h-14 p-0">
                 <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6" />
