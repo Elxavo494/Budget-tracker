@@ -14,7 +14,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { User, LogOut, ChevronDown, Moon, Sun } from 'lucide-react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useState, useEffect } from 'react';
 
 // Logo dimensions
@@ -65,17 +64,14 @@ export const Header: React.FC = () => {
               href="/" 
               className="inline-block hover:opacity-80 transition-opacity duration-200 ease-in-out"
             >
-              <Image
-                src="/images/logo.png"
-                alt="Finance Tracker Logo"
-                width={LOGO_SIZES.normal.width}
-                height={LOGO_SIZES.normal.height}
-                className="object-contain transition-all duration-300 ease-in-out"
+              <div
+                className="logo-gradient object-contain transition-all duration-300 ease-in-out"
                 style={{
                   width: isScrolled ? `${LOGO_SIZES.scrolled.width}px` : `${LOGO_SIZES.normal.width}px`,
                   height: isScrolled ? `${LOGO_SIZES.scrolled.height}px` : `${LOGO_SIZES.normal.height}px`
                 }}
-                priority
+                role="img"
+                aria-label="Finance Tracker Logo"
               />
             </Link>
             <div className="flex flex-col leading-tight min-w-0">

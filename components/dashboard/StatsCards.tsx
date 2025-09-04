@@ -55,28 +55,28 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
             const Icon = card.icon;
             const colorClasses = {
               green: {
-                bg: 'from-green-50 dark:from-green-950/50 border-green-200 dark:border-green-800/50',
+                border: 'border-green-200 dark:border-green-800/50',
                 title: 'text-green-800 dark:text-green-200',
                 icon: 'text-green-600 dark:text-green-400',
                 value: 'text-green-900 dark:text-green-100',
                 subtitle: 'text-green-700 dark:text-green-300'
               },
               red: {
-                bg: 'from-red-50 dark:from-red-950/50 border-red-200 dark:border-red-800/50',
+                border: 'border-red-200 dark:border-red-800/50',
                 title: 'text-red-800 dark:text-red-200',
                 icon: 'text-red-600 dark:text-red-400',
                 value: 'text-red-900 dark:text-red-100',
                 subtitle: 'text-red-700 dark:text-red-300'
               },
               blue: {
-                bg: 'from-blue-50 dark:from-blue-950/50 border-blue-200 dark:border-blue-800/50',
+                border: 'border-blue-200 dark:border-blue-800/50',
                 title: 'text-blue-800 dark:text-blue-200',
                 icon: 'text-blue-600 dark:text-blue-400',
                 value: 'text-blue-900 dark:text-blue-100',
                 subtitle: 'text-blue-700 dark:text-blue-300'
               },
               orange: {
-                bg: 'from-orange-50 dark:from-orange-950/50 border-orange-200 dark:border-orange-800/50',
+                border: 'border-orange-200 dark:border-orange-800/50',
                 title: 'text-orange-800 dark:text-orange-200',
                 icon: 'text-orange-600 dark:text-orange-400',
                 value: 'text-orange-900 dark:text-orange-100',
@@ -89,7 +89,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
             return (
               <Card 
                 key={index}
-                className={`bg-gradient-to-br ${colors.bg} w-full`}
+                className={`glass-card ${colors.border} w-full`}
               >
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-6">
                   <CardTitle className={`text-sm font-medium ${colors.title}`}>
@@ -128,28 +128,28 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
             const Icon = card.icon;
             const colorClasses = {
               green: {
-                bg: 'from-green-50 dark:from-green-950/50 border-green-200 dark:border-green-800/50',
+                border: 'border-green-200 dark:border-green-800/50',
                 title: 'text-green-800 dark:text-green-200',
                 icon: 'text-green-600 dark:text-green-400',
                 value: 'text-green-900 dark:text-green-100',
                 subtitle: 'text-green-700 dark:text-green-300'
               },
               red: {
-                bg: 'from-red-50 dark:from-red-950/50 border-red-200 dark:border-red-800/50',
+                border: 'border-red-200 dark:border-red-800/50',
                 title: 'text-red-800 dark:text-red-200',
                 icon: 'text-red-600 dark:text-red-400',
                 value: 'text-red-900 dark:text-red-100',
                 subtitle: 'text-red-700 dark:text-red-300'
               },
               blue: {
-                bg: 'from-blue-50 dark:from-blue-950/50 border-blue-200 dark:border-blue-800/50',
+                border: 'border-blue-200 dark:border-blue-800/50',
                 title: 'text-blue-800 dark:text-blue-200',
                 icon: 'text-blue-600 dark:text-blue-400',
                 value: 'text-blue-900 dark:text-blue-100',
                 subtitle: 'text-blue-700 dark:text-blue-300'
               },
               orange: {
-                bg: 'from-orange-50 dark:from-orange-950/50 border-orange-200 dark:border-orange-800/50',
+                border: 'border-orange-200 dark:border-orange-800/50',
                 title: 'text-orange-800 dark:text-orange-200',
                 icon: 'text-orange-600 dark:text-orange-400',
                 value: 'text-orange-900 dark:text-orange-100',
@@ -162,7 +162,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
             return (
               <SwiperSlide key={index}>
                 <Card 
-                  className={`bg-gradient-to-br ${colors.bg} h-full`}
+                  className={`glass-card ${colors.border} h-full`}
                 >
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4 pb-2 sm:p-6">
                     <CardTitle className={`text-sm font-medium ${colors.title}`}>

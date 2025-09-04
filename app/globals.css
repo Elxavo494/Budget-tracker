@@ -150,6 +150,15 @@
       hsl(var(--background)) 100%);
   }
   
+  /* Logo gradient mask */
+  .logo-gradient {
+    mask: url('/images/logo.png') no-repeat center;
+    mask-size: contain;
+    -webkit-mask: url('/images/logo.png') no-repeat center;
+    -webkit-mask-size: contain;
+    background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 25%, #f97316 75%, #eab308 100%);
+  }
+
   /* Enhanced shadows - better dark mode support */
   .shadow-glass {
     box-shadow: 

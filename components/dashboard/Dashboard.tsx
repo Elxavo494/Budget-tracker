@@ -285,7 +285,7 @@ export const Dashboard: React.FC = () => {
           </div>
 
           {/* Budget Card */}
-          <div className="max-w-sm mx-auto sm:max-w-none">
+          <div className="mx-auto sm:max-w-none">
             <Card className="glass-card">
               <CardContent className="p-6">
                 <div className="flex justify-between items-center mb-4">
