@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -253,22 +253,32 @@ export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
     );
   };
 
-  // Mobile edit state
-  const editButtonRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
 
   // Drag state
   const [dragState, setDragState] = useState<{
     isDragging: boolean;
     startX: number;
+    startY: number;
     currentX: number;
     transactionId: string;
   } | null>(null);
 
   const handleTouchStart = (e: React.TouchEvent, transaction: TransactionItem) => {
     const touch = e.touches[0];
+    const element = e.currentTarget as HTMLElement;
+    const elementRect = element.getBoundingClientRect();
+    const touchX = touch.clientX;
+    
+    // Only start drag if touch is within 30px of the right edge (for swipe left to delete)
+    const edgeThreshold = 30;
+    const isNearRightEdge = touchX >= (elementRect.right - edgeThreshold);
+    
+    if (!isNearRightEdge) return; // Don't start drag if not near edge
+    
     setDragState({
       isDragging: false,
       startX: touch.clientX,
+      startY: touch.clientY,
       currentX: touch.clientX,
       transactionId: transaction.id
     });
@@ -279,46 +289,35 @@ export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
     
     const touch = e.touches[0];
     const deltaX = touch.clientX - dragState.startX;
+    const deltaY = touch.clientY - dragState.startY;
     
-    setDragState(prev => prev ? {
-      ...prev,
-      isDragging: Math.abs(deltaX) > 10,
-      currentX: touch.clientX
-    } : null);
+    // If vertical movement is greater than horizontal, don't trigger swipe (allow scrolling)
+    if (Math.abs(deltaY) > Math.abs(deltaX)) {
+      setDragState(null);
+      return;
+    }
+    
+    // Only trigger for significant horizontal movement (increased threshold)
+    if (Math.abs(deltaX) > 20) {
+      setDragState(prev => prev ? {
+        ...prev,
+        isDragging: true,
+        currentX: touch.clientX
+      } : null);
+    }
   };
 
   const handleTouchEnd = (transaction: TransactionItem) => {
     if (!dragState) return;
     
     const deltaX = dragState.currentX - dragState.startX;
-    const threshold = 100; // pixels
+    const threshold = 120; // Increased threshold to make it less sensitive
     
-    if (Math.abs(deltaX) > threshold) {
-      if (deltaX > 0) {
-        // Swipe right - edit
-        setTimeout(() => {
-          const button = editButtonRefs.current[transaction.id];
-          if (button) {
-            button.click();
-          }
-        }, 200); // Small delay to let overlay animation finish
-      } else {
-        // Swipe left - delete
-        const normalizedSubtype = transaction.subtype === 'onetime' ? 'one-time' : transaction.subtype;
-        const deleteType = `${normalizedSubtype}-${transaction.type}`;
-        handleDeleteClick(deleteType, transaction.id, transaction.name);
-      }
-    } else if (!dragState.isDragging) {
-      // Tap without drag - open edit on mobile
-      const isMobile = window.innerWidth < 768;
-      if (isMobile) {
-        setTimeout(() => {
-          const button = editButtonRefs.current[transaction.id];
-          if (button) {
-            button.click();
-          }
-        }, 100);
-      }
+    // Only handle swipe left to delete (removed swipe right for edit)
+    if (deltaX < -threshold && dragState.isDragging) {
+      const normalizedSubtype = transaction.subtype === 'onetime' ? 'one-time' : transaction.subtype;
+      const deleteType = `${normalizedSubtype}-${transaction.type}`;
+      handleDeleteClick(deleteType, transaction.id, transaction.name);
     }
     
     setDragState(null);
@@ -340,7 +339,7 @@ export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
     const normalizedSubtype = transaction.subtype === 'onetime' ? 'one-time' : transaction.subtype;
     const deleteType = `${normalizedSubtype}-${transaction.type}`;
 
-    // Calculate drag overlay properties
+    // Calculate drag overlay properties (only for delete)
     let overlayOpacity = 0;
     let overlayColor = '';
     let overlayIcon = null;
@@ -351,18 +350,9 @@ export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
     if (dragState && dragState.transactionId === transaction.id && dragState.isDragging) {
       const deltaX = dragState.currentX - dragState.startX;
       const maxOpacity = 0.8;
-      const threshold = 100;
-      const progress = Math.min(1, Math.abs(deltaX) / threshold);
+      const threshold = 120; // Updated to match the new threshold
       
-      if (deltaX > 10) {
-        // Swipe right - edit (blue) - slides from left
-        overlayOpacity = maxOpacity;
-        overlayWidth = `${Math.min(100, (Math.abs(deltaX) / threshold) * 100)}%`;
-        overlayColor = 'bg-blue-500';
-        overlayIcon = <Edit className="h-6 w-6 text-white" />;
-        overlayText = 'Edit';
-        overlayPosition = 'left-0';
-      } else if (deltaX < -10) {
+      if (deltaX < -20) {
         // Swipe left - delete (red) - slides from right
         overlayOpacity = maxOpacity;
         overlayWidth = `${Math.min(100, (Math.abs(deltaX) / threshold) * 100)}%`;
@@ -405,7 +395,7 @@ export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
           
           {/* Transaction item */}
           <div
-            className={`flex items-center gap-3 p-3 sm:p-4 rounded-xl border ${bgColor} ${borderColor} transition-all duration-200 hover:shadow-sm dark:hover:shadow-lg cursor-pointer sm:cursor-default touch-pan-y select-none relative`}
+            className={`flex items-center gap-3 p-3 sm:p-4 rounded-xl border ${bgColor} ${borderColor} transition-all duration-200 hover:shadow-sm dark:hover:shadow-lg touch-pan-y select-none relative`}
             onTouchStart={(e) => handleTouchStart(e, transaction)}
             onTouchMove={handleTouchMove}
             onTouchEnd={() => handleTouchEnd(transaction)}
@@ -458,38 +448,18 @@ export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
             {isIncome ? '+' : ''}{formatCurrency(transaction.amount)}
           </p>
           
-              {/* Action buttons - hidden on mobile, visible on desktop */}
-              <div className="hidden sm:flex items-center gap-1">
+              {/* Edit button - now larger and more prominent */}
+              <div className="flex items-center">
                 <EditFormComponent {...editProps}>
-                <Button variant="ghost" size="sm" className="h-7 w-7 p-0 hover:bg-gray-200 dark:hover:bg-gray-600">
-                  <Edit className="h-3 w-3" />
+                <Button variant="ghost" size="default" className="h-9 w-9 p-0 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-600">
+                  <Edit className="h-4 w-4 text-gray-600 dark:text-gray-300" />
                 </Button>
                 </EditFormComponent>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 w-7 p-0 hover:bg-gray-200 dark:hover:bg-gray-600"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteClick(deleteType, transaction.id, transaction.name);
-                  }}
-            >
-              <Trash2 className="h-3 w-3" />
-            </Button>
           </div>
         </div>
           </div>
         </div>
 
-        {/* Hidden mobile edit trigger */}
-        <EditFormComponent {...editProps}>
-          <button 
-            ref={(btn) => {
-              editButtonRefs.current[transaction.id] = btn;
-            }}
-            style={{ display: 'none' }}
-          />
-        </EditFormComponent>
       </div>
     );
   };
