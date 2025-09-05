@@ -1,4 +1,4 @@
-import { startOfMonth, endOfMonth, isWithinInterval, format } from 'date-fns';
+import { startOfMonth, endOfMonth, isWithinInterval, format, startOfWeek, endOfWeek, eachDayOfInterval, addDays, isSameDay } from 'date-fns';
 import { RecurringIncome, RecurringExpense, OneTimeIncome, OneTimeExpense, Category } from '@/types';
 
 export const getCurrentMonthRange = () => {
@@ -149,6 +149,101 @@ export const calculateWeeksRemainingInMonth = (selectedDate: Date): number => {
   // For current month, calculate remaining weeks from today
   const remainingDays = Math.ceil((monthEnd.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)) + 1;
   return Math.max(1, Math.ceil(remainingDays / 7));
+};
+
+export const calculateWeeklyExpenses = (
+  recurringExpenses: RecurringExpense[],
+  oneTimeExpenses: OneTimeExpense[],
+  monthStart: Date,
+  monthEnd: Date
+) => {
+  const weeks = [];
+  let current = startOfWeek(monthStart);
+  
+  while (current <= monthEnd) {
+    const weekEnd = endOfWeek(current);
+    const weekStart = current;
+    const actualWeekEnd = weekEnd > monthEnd ? monthEnd : weekEnd;
+    
+    // Calculate days in this week that fall within the month
+    const daysInWeek = Math.ceil((actualWeekEnd.getTime() - weekStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    const daysInMonth = Math.ceil((monthEnd.getTime() - monthStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    
+    // Calculate recurring expenses for this week
+    const weeklyRecurring = recurringExpenses
+      .filter(expense => isRecurringItemActiveInMonth(expense.startDate, expense.endDate, monthStart, monthEnd))
+      .reduce((total, expense) => {
+        let weeklyAmount = 0;
+        if (expense.recurrence === 'weekly') {
+          weeklyAmount = expense.amount;
+        } else if (expense.recurrence === 'monthly') {
+          // Distribute monthly amount proportionally across the weeks in the month
+          weeklyAmount = (expense.amount / daysInMonth) * daysInWeek;
+        } else if (expense.recurrence === 'yearly') {
+          // Distribute yearly amount proportionally
+          weeklyAmount = (expense.amount / 365) * daysInWeek;
+        }
+        return total + weeklyAmount;
+      }, 0);
+    
+    // Calculate one-time expenses for this week
+    const weeklyOneTime = oneTimeExpenses
+      .filter(expense => {
+        const expenseDate = new Date(expense.date);
+        return isWithinInterval(expenseDate, { start: weekStart, end: actualWeekEnd });
+      })
+      .reduce((total, expense) => total + expense.amount, 0);
+    
+    const totalWeeklyExpenses = weeklyRecurring + weeklyOneTime;
+    
+    weeks.push({
+      week: format(weekStart, 'MMM dd'),
+      weekEnd: format(actualWeekEnd, 'MMM dd'),
+      fullDate: weekStart,
+      value: Math.round(totalWeeklyExpenses * 100) / 100,
+      days: eachDayOfInterval({ start: weekStart, end: actualWeekEnd }).map(day => ({
+        day: format(day, 'EEE'),
+        date: day,
+        value: calculateDailyExpenses(recurringExpenses, oneTimeExpenses, day),
+        isToday: isSameDay(day, new Date())
+      }))
+    });
+    
+    current = addDays(actualWeekEnd, 1);
+  }
+  
+  return weeks;
+};
+
+export const calculateDailyExpenses = (
+  recurringExpenses: RecurringExpense[],
+  oneTimeExpenses: OneTimeExpense[],
+  date: Date
+): number => {
+  const dayStart = new Date(date);
+  dayStart.setHours(0, 0, 0, 0);
+  const dayEnd = new Date(date);
+  dayEnd.setHours(23, 59, 59, 999);
+  
+  // Calculate recurring expenses for this day
+  const dailyRecurring = recurringExpenses
+    .filter(expense => isRecurringItemActiveInMonth(expense.startDate, expense.endDate, dayStart, dayEnd))
+    .reduce((total, expense) => {
+      const dailyAmount = expense.recurrence === 'weekly' ? expense.amount / 7 :
+        expense.recurrence === 'monthly' ? expense.amount / 30 :
+        expense.amount / 365; // yearly
+      return total + dailyAmount;
+    }, 0);
+  
+  // Calculate one-time expenses for this day
+  const dailyOneTime = oneTimeExpenses
+    .filter(expense => {
+      const expenseDate = new Date(expense.date);
+      return isSameDay(expenseDate, date);
+    })
+    .reduce((total, expense) => total + expense.amount, 0);
+  
+  return Math.round((dailyRecurring + dailyOneTime) * 100) / 100;
 };
 
 export const formatCurrency = (amount: number): string => {

@@ -422,7 +422,14 @@ export const Dashboard: React.FC = () => {
               <CardTitle className="text-lg sm:text-xl font-semibold text-slate-800 dark:text-slate-200">Expenses by Category</CardTitle>
             </CardHeader>
             <CardContent>
-              <ExpenseChart data={expensesByCategory} />
+              <ExpenseChart 
+                data={expensesByCategory} 
+                monthStart={monthStart}
+                monthEnd={monthEnd}
+                selectedDate={selectedDate}
+                recurringExpenses={data.recurringExpenses}
+                oneTimeExpenses={data.oneTimeExpenses}
+              />
             </CardContent>
           </Card>
 
