@@ -103,13 +103,10 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
             return (
               <div 
                 key={category.name}
-                className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors focus:outline-none"
+                className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors focus:outline-none pl-0"
               >
                 <div className="flex items-center gap-3 flex-1">
-                  <div 
-                    className="w-3 h-3 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: category.color }}
-                  />
+                 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="font-medium text-sm text-slate-800 dark:text-slate-200 truncate">

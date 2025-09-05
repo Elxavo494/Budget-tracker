@@ -507,23 +507,23 @@ export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
           </div>
 
           {/* Search and Filter Controls */}
-          <div className="flex flex-col gap-3 mb-4 sm:mb-6">
+          <div className="flex flex-col gap-2 mb-4 sm:mb-6">
             {/* Search Bar */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-6 w-4" />
               <Input
                 placeholder="Search transactions..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 h-12 bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700"
               />
             </div>
             
             {/* Filter and Sort Controls */}
-            <div className="flex flex-row gap-3">
+            <div className="flex flex-row gap-2">
               {/* Transaction Type Filter */}
               <Select value={transactionTypeFilter} onValueChange={setTransactionTypeFilter}>
-                <SelectTrigger className="flex-1">
+                <SelectTrigger className="flex-1 h-12 bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -535,7 +535,7 @@ export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
 
               {/* Sort Dropdown */}
               <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="flex-1">
+                <SelectTrigger className="flex-1 h-12 bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700">
                   <ArrowUpDown className="h-4 w-4 mr-2" />
                   <SelectValue />
                 </SelectTrigger>
