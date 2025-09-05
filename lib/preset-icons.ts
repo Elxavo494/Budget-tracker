@@ -41,49 +41,6 @@ export const presetIcons: PresetIcon[] = [
     domain: 'starbucks.com',
     backgroundColor: '#00704A'
   },
-  {
-    id: 'subway',
-    name: 'Subway',
-    category: 'food',
-    domain: 'subway.com',
-    backgroundColor: '#009639'
-  },
-  {
-    id: 'kfc',
-    name: 'KFC',
-    category: 'food',
-    domain: 'kfc.com',
-    backgroundColor: '#F40027'
-  },
-  {
-    id: 'pizzahut',
-    name: 'Pizza Hut',
-    category: 'food',
-    domain: 'pizzahut.com',
-    backgroundColor: '#EE3124'
-  },
-  {
-    id: 'dominos',
-    name: 'Domino\'s',
-    category: 'food',
-    domain: 'dominos.com',
-    backgroundColor: '#0078AE'
-  },
-  {
-    id: 'burgerking',
-    name: 'Burger King',
-    category: 'food',
-    domain: 'bk.com',
-    backgroundColor: '#D62300'
-  },
-  {
-    id: 'tacobell',
-    name: 'Taco Bell',
-    category: 'food',
-    domain: 'tacobell.com',
-    backgroundColor: '#7B3F98'
-  },
-
   // Belgian Food & Restaurants
   {
     id: 'delhaize',
@@ -164,22 +121,7 @@ export const presetIcons: PresetIcon[] = [
     domain: 'music.apple.com',
     backgroundColor: '#FA2D48'
   },
-
   // Belgian Entertainment & Media
-  {
-    id: 'vtm-go',
-    name: 'VTM GO',
-    category: 'entertainment',
-    domain: 'vtm.be',
-    backgroundColor: '#FF6600'
-  },
-  {
-    id: 'een',
-    name: 'Eén',
-    category: 'entertainment',
-    domain: 'een.be',
-    backgroundColor: '#0066CC'
-  },
   {
     id: 'kinepolis',
     name: 'Kinepolis',
@@ -187,14 +129,6 @@ export const presetIcons: PresetIcon[] = [
     domain: 'kinepolis.be',
     backgroundColor: '#E31E24'
   },
-  {
-    id: 'ugc',
-    name: 'UGC',
-    category: 'entertainment',
-    domain: 'ugc.be',
-    backgroundColor: '#000000'
-  },
-
   // Shopping & Retail
   {
     id: 'amazon',
@@ -254,21 +188,6 @@ export const presetIcons: PresetIcon[] = [
     domain: 'bol.com',
     backgroundColor: '#0B7EC8'
   },
-  {
-    id: 'di-be',
-    name: 'Di',
-    category: 'shopping',
-    domain: 'di.be',
-    backgroundColor: '#E31E24'
-  },
-  {
-    id: 'torfs',
-    name: 'Torfs',
-    category: 'shopping',
-    domain: 'torfs.be',
-    backgroundColor: '#000000'
-  },
-
   // Transportation
   {
     id: 'uber',
@@ -277,21 +196,6 @@ export const presetIcons: PresetIcon[] = [
     domain: 'uber.com',
     backgroundColor: '#000000'
   },
-  {
-    id: 'shell',
-    name: 'Shell',
-    category: 'transport',
-    domain: 'shell.com',
-    backgroundColor: '#FFD320'
-  },
-  {
-    id: 'bp',
-    name: 'BP',
-    category: 'transport',
-    domain: 'bp.com',
-    backgroundColor: '#009639'
-  },
-
   // Belgian Transport
   {
     id: 'sncb',
@@ -306,13 +210,6 @@ export const presetIcons: PresetIcon[] = [
     category: 'transport',
     domain: 'delijn.be',
     backgroundColor: '#0066CC'
-  },
-  {
-    id: 'stib',
-    name: 'STIB/MIVB',
-    category: 'transport',
-    domain: 'stib-mivb.be',
-    backgroundColor: '#FF6600'
   },
   {
     id: 'total-be',
@@ -379,7 +276,13 @@ export const presetIcons: PresetIcon[] = [
     domain: 'sodexo.be',
     backgroundColor: '#0066CC'
   },
-
+  {
+    id: 'pluxee',
+    name: 'Pluxee',
+    category: 'utilities',
+    domain: 'pluxee.be',
+    backgroundColor: '#0066CC'
+  },
   // Belgian Health & Wellness
   {
     id: 'helan',
@@ -417,19 +320,32 @@ export const presetIcons: PresetIcon[] = [
     backgroundColor: '#FF6600'
   },
   {
-    id: 'fitness-plus',
-    name: 'Fitness Plus',
+    id: 'jims',
+    name: 'Jims',
     category: 'health',
-    domain: 'fitnessplus.be',
-    backgroundColor: '#0066B3'
+    domain: 'jims.be',
+    backgroundColor: '#0066CC'
   },
-
   // Payment & Financial Services
   {
     id: 'paypal',
     name: 'PayPal',
     category: 'income',
     domain: 'paypal.com',
+    backgroundColor: '#0070BA'
+  },
+  {
+    id: 'visa',
+    name: 'Visa',
+    category: 'income',
+    domain: 'visa.com',
+    backgroundColor: '#0070BA'
+  },
+  {
+    id: 'mastercard',
+    name: 'Mastercard',
+    category: 'income',
+    domain: 'mastercard.com',
     backgroundColor: '#0070BA'
   },
 

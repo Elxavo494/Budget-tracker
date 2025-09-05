@@ -382,7 +382,7 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
                         type="button"
                         variant="outline" 
                         size="sm" 
-                        className="h-10 w-10 p-0 flex-shrink-0"
+                        className="h-14 w-14 p-0 flex-shrink-0"
                       >
                         <Plus className="h-4 w-4" />
                       </Button>
@@ -464,7 +464,7 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
                         type="button"
                         variant="outline" 
                         size="sm" 
-                        className="h-10 w-10 p-0 flex-shrink-0"
+                        className="h-14 w-14 p-0 flex-shrink-0"
                       >
                         <Plus className="h-4 w-4" />
                       </Button>
@@ -587,7 +587,7 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
                     type="button"
                     variant="outline" 
                     size="sm" 
-                    className="h-10 w-10 p-0 flex-shrink-0"
+                    className="h-14 w-14 p-0 flex-shrink-0"
                   >
                     <Plus className="h-4 w-4" />
                   </Button>
@@ -706,7 +706,7 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
                     type="button"
                     variant="outline" 
                     size="sm" 
-                    className="h-10 w-10 p-0 flex-shrink-0"
+                    className="h-14 w-14 p-0 flex-shrink-0"
                   >
                     <Plus className="h-4 w-4" />
                   </Button>

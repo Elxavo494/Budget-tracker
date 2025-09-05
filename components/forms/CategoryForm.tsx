@@ -16,10 +16,30 @@ interface CategoryFormProps {
 }
 
 const categoryColors = [
-  '#ef4444', '#f97316', '#f59e0b', '#eab308', 
-  '#84cc16', '#22c55e', '#10b981', '#14b8a6', 
-  '#06b6d4', '#0ea5e9', '#3b82f6', '#6366f1', 
-  '#8b5cf6', '#a855f7', '#d946ef', '#ec4899'
+  // Reds
+  '#ef4444', '#b91c1c', '#991b1b', 
+  // Oranges
+  '#f97316', '#ea580c', '#c2410c',
+  // Yellows
+  '#f59e0b', '#eab308', '#ca8a04', '#a16207',
+  // Greens
+  '#84cc16', '#22c55e', '#10b981', '#14b8a6',
+  '#059669', '#047857', '#065f46', '#16a34a',
+  // Blues
+  '#06b6d4', '#0ea5e9', '#3b82f6', '#2563eb',
+  '#1d4ed8', '#1e40af', '#1e3a8a', '#0284c7',
+  // Purples
+  '#8b5cf6', '#a855f7', '#9333ea', '#7c3aed',
+  '#6d28d9', '#5b21b6', '#581c87', '#6366f1',
+  // Pinks
+  '#d946ef', '#ec4899', '#be185d', '#9d174d',
+  '#831843', '#db2777', '#c026d3', '#a21caf',
+  // Grays
+  '#6b7280', '#4b5563', '#374151', '#1f2937',
+  '#111827', '#9ca3af', '#d1d5db', '#e5e7eb',
+  // Additional vibrant colors
+  '#f43f5e', '#06d6a0', '#118ab2', '#073b4c',
+  '#ffd166', '#ef476f', '#06ffa5', '#1b9aaa'
 ];
 
 export const CategoryForm: React.FC<CategoryFormProps> = ({ 
@@ -27,12 +47,17 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
   onClose,
   children 
 }) => {
-  const { addCategory, updateCategory } = useSupabaseFinance();
+  const { data, addCategory, updateCategory } = useSupabaseFinance();
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: category?.name || '',
     color: category?.color || categoryColors[0],
   });
+
+  // Get colors that are already used by other categories
+  const usedColors = data.categories
+    .filter(cat => category ? cat.id !== category.id : true) // Exclude current category when editing
+    .map(cat => cat.color);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,18 +116,35 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
           
           <div>
             <Label>Color</Label>
-            <div className="grid grid-cols-8 gap-2 mt-2">
-              {categoryColors.map((color) => (
-                <button
-                  key={color}
-                  type="button"
-                  className={`w-8 h-8 rounded-full border-2 transition-all ${
-                    formData.color === color ? 'border-gray-800 scale-110' : 'border-gray-300'
-                  }`}
-                  style={{ backgroundColor: color }}
-                  onClick={() => setFormData({ ...formData, color })}
-                />
-              ))}
+            <div className="grid grid-cols-10 gap-2 mt-2">
+              {categoryColors.map((color) => {
+                const isUsed = usedColors.includes(color);
+                const isSelected = formData.color === color;
+                
+                return (
+                  <button
+                    key={color}
+                    type="button"
+                    disabled={isUsed}
+                    className={`w-7 h-7 rounded-full transition-all relative ${
+                      isSelected 
+                        ? 'border-2 border-white scale-110' 
+                        : isUsed 
+                          ? 'opacity-20 cursor-not-allowed grayscale' 
+                          : 'hover:scale-105'
+                    }`}
+                    style={{ backgroundColor: color }}
+                    onClick={() => !isUsed && setFormData({ ...formData, color })}
+                    title={isUsed ? 'Color already in use' : ''}
+                  >
+                    {isUsed && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-6 h-0.5 bg-gray-100 transform rotate-45"></div>
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
