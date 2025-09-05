@@ -463,16 +463,18 @@ export const Dashboard: React.FC = () => {
 
         {/* Mobile-Friendly Action Buttons */}
         <div className="fixed bottom-4 w-fit mx-auto left-1/2 -translate-x-1/2 sm:bottom-6 z-50">
-          <div className="flex items-center justify-center gap-3 sm:gap-4 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-white/40 dark:border-slate-700/60 rounded-full shadow-lg dark:shadow-2xl px-4 sm:px-4 py-3 sm:py-3 max-w-sm mx-auto sm:max-w-none">
+          <div className="flex items-center justify-center gap-2 sm:gap-3 glass-card rounded-full shadow-sm dark:shadow-lg px-3 sm:px-4 py-2.5 sm:py-3 max-w-sm mx-auto sm:max-w-none">
             <UnifiedIncomeForm>
-              <Button variant="income" size="lg" className="rounded-full w-14 h-14 sm:w-14 sm:h-14 p-0">
-                <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6" />
+              <Button variant="income" size="lg" className="rounded-full px-4 py-2 gap-2 hover:scale-105 active:scale-95 transition-transform duration-200">
+                <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5" />
+                <span className="text-sm font-medium">Add income</span>
               </Button>
             </UnifiedIncomeForm>
-            <div className="w-px h-8 sm:h-8 bg-border"></div>
+            <div className="w-px h-6 sm:h-8 bg-border/50"></div>
             <UnifiedExpenseForm>
-              <Button variant="expense" size="lg" className="rounded-full w-14 h-14 sm:w-14 sm:h-14 p-0">
-                <TrendingDown className="h-5 w-5 sm:h-6 sm:w-6" />
+              <Button variant="expense" size="lg" className="rounded-full px-4 py-2 gap-2 hover:scale-105 active:scale-95 transition-transform duration-200">
+                <TrendingDown className="h-4 w-4 sm:h-5 sm:w-5" />
+                <span className="text-sm font-medium">Add expense</span>
               </Button>
             </UnifiedExpenseForm>
           </div>

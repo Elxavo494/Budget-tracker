@@ -17,20 +17,35 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className="fixed bottom-6 right-6 z-50">
+    <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50">
       <div className={cn(
-        "flex flex-col-reverse items-end gap-3 transition-all duration-300",
-        isOpen ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none",
+        "flex flex-col-reverse items-end gap-2.5 sm:gap-3 transition-all duration-300 ease-out",
+        isOpen ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-3 scale-95 pointer-events-none",
         className
       )}>
         {children}
       </div>
       <Button
+        variant="ghost"
         size="lg"
-        className="w-14 h-14 rounded-full bg-blue-600 hover:bg-blue-700 shadow-lg hover:shadow-xl transition-all duration-200"
+        className={cn(
+          "w-12 h-12 sm:w-14 sm:h-14 rounded-full border-0",
+          "bg-black/5 dark:bg-white/5 backdrop-blur-sm",
+          "shadow-none",
+          "hover:bg-black/10 dark:hover:bg-white/10",
+          "hover:scale-102 active:scale-98",
+          "transition-all duration-200 ease-out",
+          "group"
+        )}
         onClick={() => setIsOpen(!isOpen)}
       >
-        {isOpen ? <X className="h-6 w-6" /> : <Plus className="h-6 w-6" />}
+        <div className="relative">
+          {isOpen ? (
+            <X className="h-4 w-4 text-slate-600/70 dark:text-slate-400/70 transition-all duration-200" />
+          ) : (
+            <Plus className="h-4 w-4 text-slate-600/70 dark:text-slate-400/70 transition-all duration-200 group-hover:text-slate-700 dark:group-hover:text-slate-300" />
+          )}
+        </div>
       </Button>
     </div>
   );
@@ -44,12 +59,22 @@ export const FloatingActionItem: React.FC<{
   return (
     <div
       className={cn(
-        "bg-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 cursor-pointer",
+        "relative group cursor-pointer",
+        "bg-black/5 dark:bg-white/5 backdrop-blur-sm",
+        "border-0",
+        "rounded-full shadow-none",
+        "hover:bg-black/10 dark:hover:bg-white/10",
+        "hover:scale-102 active:scale-98",
+        "transition-all duration-200 ease-out",
+        "min-w-[40px] min-h-[40px] sm:min-w-[48px] sm:min-h-[48px]",
+        "flex items-center justify-center",
         className
       )}
       onClick={onClick}
     >
-      {children}
+      <div className="transition-all duration-200 group-hover:scale-105 opacity-70 group-hover:opacity-100">
+        {children}
+      </div>
     </div>
   );
 };

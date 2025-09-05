@@ -339,7 +339,7 @@ export const presetIcons: PresetIcon[] = [
     name: 'Visa',
     category: 'income',
     domain: 'visa.com',
-    backgroundColor: '#0070BA'
+    backgroundColor: '#1932d5'
   },
   {
     id: 'mastercard',

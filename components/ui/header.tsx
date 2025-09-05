@@ -14,12 +14,13 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { User, LogOut, ChevronDown, Moon, Sun } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useState, useEffect } from 'react';
 
 // Logo dimensions
 const LOGO_SIZES = {
-  normal: { width: 60, height: 30 },
-  scrolled: { width: 40, height: 20 }
+  normal: { width: 40, height: 30 },
+  scrolled: { width: 30, height: 20 }
 } as const;
 
 export const Header: React.FC = () => {
@@ -59,19 +60,17 @@ export const Header: React.FC = () => {
     `}>
       <div className={`max-w-[1680px] mx-auto mobile-padding transition-smooth ${isScrolled ? 'py-3' : 'py-4'}`}>
         <div className="flex justify-between items-center">
-          <div className="flex items-center flex-1 min-w-0 -ml-2">
+          <div className="flex items-center flex-1 min-w-0">
             <Link 
               href="/" 
               className="inline-block hover:opacity-80 transition-opacity duration-200 ease-in-out"
             >
-              <div
-                className="logo-gradient object-contain transition-all duration-300 ease-in-out"
-                style={{
-                  width: isScrolled ? `${LOGO_SIZES.scrolled.width}px` : `${LOGO_SIZES.normal.width}px`,
-                  height: isScrolled ? `${LOGO_SIZES.scrolled.height}px` : `${LOGO_SIZES.normal.height}px`
-                }}
-                role="img"
-                aria-label="Finance Tracker Logo"
+              <Image
+                src="/images/logo.svg"
+                alt="Finance Tracker Logo"
+                width={isScrolled ? LOGO_SIZES.scrolled.width : LOGO_SIZES.normal.width}
+                height={isScrolled ? LOGO_SIZES.scrolled.height : LOGO_SIZES.normal.height}
+                className="object-contain transition-all duration-300 ease-in-out mr-2"
               />
             </Link>
             <div className="flex flex-col leading-tight min-w-0">
@@ -87,7 +86,7 @@ export const Header: React.FC = () => {
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
-                className="flex items-center gap-2 px-2 py-1 h-auto focus-modern"
+                className="flex items-center gap-2 px-2 py-1 h-auto focus-modern rounded-full glass-card"
               >
                 <div className="flex items-center gap-2">
                   <Avatar className="h-8 w-8">

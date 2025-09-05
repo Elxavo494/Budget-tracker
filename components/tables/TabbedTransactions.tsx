@@ -488,7 +488,7 @@ export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
       // All tab - show both options in a dropdown or default to expense
       return (
         <UnifiedExpenseForm>
-          <Button size="sm" className="gap-2 rounded-full">
+          <Button variant="ghost" size="sm" className="gap-2 rounded-full border-0 bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800">
             <Plus className="h-4 w-4" />
             <span className="hidden sm:inline">Add</span>
           </Button>
