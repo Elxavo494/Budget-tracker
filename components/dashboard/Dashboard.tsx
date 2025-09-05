@@ -20,7 +20,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { TabbedTransactions } from '@/components/tables/TabbedTransactions';
-import { CategoriesManager } from './CategoriesManager';
 import { FloatingActionButton, FloatingActionItem } from '@/components/ui/floating-action-button';
 import { PullToRefresh } from '@/components/ui/pull-to-refresh';
 import { SpendingInsights } from '@/components/ui/spending-insights';
@@ -30,7 +29,7 @@ import { UnifiedExpenseForm } from '@/components/forms/UnifiedExpenseForm';
 import { DataImporter } from '@/components/utils/DataImporter';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { TrendingUp, TrendingDown, ChevronLeft, ChevronRight, ChevronDown, Settings } from 'lucide-react';
+import { TrendingUp, TrendingDown, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 import { generateSpendingInsights } from '@/lib/spending-insights';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 
@@ -200,7 +199,7 @@ export const Dashboard: React.FC = () => {
                 {formatCurrency(leftToSpend)}
               </div>
               <p className="absolute -top-4 -right-0 text-gray-100/70 dark:text-gray-100/70 text-xs font-normal whitespace-nowrap">
-                {formatCurrency(leftToSpendPerWeek)}/week
+                {formatCurrency(leftToSpendPerWeek)}/ remaining weeks
               </p>
             </div>
             <p className="text-gray-100 dark:text-gray-100 text-base font-medium">
@@ -210,78 +209,140 @@ export const Dashboard: React.FC = () => {
 
            {/* Month Selector */}
            <div className="flex justify-center mb-14">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className="px-3 py-1.5 gap-2 h-auto glass-card hover:bg-slate-100 dark:hover:bg-slate-800/50"
-                >
-                  <span className="font-medium text-slate-600 dark:text-gray-100 text-sm">
-                    {format(selectedDate, 'MMMM yyyy')}
-                  </span>
-                  <ChevronDown className="h-3 w-3 text-slate-400 dark:text-slate-500" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="center" className="w-56 p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg">
-                <DropdownMenuItem 
-                  onClick={goToPreviousMonth} 
-                  className="flex items-center justify-between px-4 py-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors duration-150 group"
-                >
-                  <span className="text-slate-600 dark:text-slate-300 font-medium">
-                    {format(subMonths(selectedDate, 1), 'MMMM yyyy')}
-                  </span>
-                  <ChevronLeft className="h-4 w-4 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200 transition-colors" />
-                </DropdownMenuItem>
-                
-                <div className="mx-2 my-2 border-t border-slate-100 dark:border-slate-700"></div>
-                
-                <DropdownMenuItem 
-                  onClick={goToCurrentMonth} 
-                  className="flex items-center justify-center px-4 py-3 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors duration-150 group"
-                >
-                  <span className="font-semibold text-blue-600 dark:text-blue-400 group-hover:text-blue-700 dark:group-hover:text-blue-300">
-                    Current Month
-                  </span>
-                </DropdownMenuItem>
-                
-                <div className="mx-2 my-2 border-t border-slate-100 dark:border-slate-700"></div>
-                
-                <DropdownMenuItem 
-                  onClick={goToNextMonth} 
-                  className="flex items-center justify-between px-4 py-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors duration-150 group"
-                >
-                  <span className="text-slate-600 dark:text-slate-300 font-medium">
-                    {format(addMonths(selectedDate, 1), 'MMMM yyyy')}
-                  </span>
-                  <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200 transition-colors" />
-                </DropdownMenuItem>
-                
-                <div className="mx-2 my-2 border-t border-slate-100 dark:border-slate-700"></div>
-                
-                {/* Categories Option */}
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <DropdownMenuItem
-                      onSelect={(e) => e.preventDefault()}
-                      className="flex items-center justify-between px-4 py-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors duration-150 group cursor-pointer"
-                    >
-                      <div className="flex items-center gap-3">
-                        <Settings className="h-4 w-4 text-slate-500 dark:text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200 transition-colors" />
-                        <span className="text-slate-600 dark:text-slate-300 font-medium group-hover:text-slate-700 dark:group-hover:text-slate-200">
-                          Manage Categories
+            <div className="flex items-center gap-1 bg-white/60 dark:bg-slate-800/10 backdrop-blur-sm rounded-lg shadow-sm p-1">
+              {/* Previous Month Button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={goToPreviousMonth}
+                className="h-7 w-7 p-0 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors"
+              >
+                <ChevronLeft className="h-3.5 w-3.5 text-slate-600 dark:text-slate-300" />
+              </Button>
+
+              {/* Current Month Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="px-3 py-1.5 gap-1.5 h-auto hover:bg-slate-100 dark:hover:bg-slate-700/50 min-w-[140px] transition-colors rounded-md"
+                  >
+                    <span className="font-medium text-slate-800 dark:text-slate-100 text-sm">
+                      {format(selectedDate, 'MMMM yyyy')}
+                    </span>
+                    <ChevronDown className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="center" className="w-64 p-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg">
+                  {/* Quick navigation header */}
+                  <div className="px-3 py-2 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                    Quick Navigation
+                  </div>
+                  
+                  {/* Current month option */}
+                  {!isCurrentMonth && (
+                    <>
+                      <DropdownMenuItem 
+                        onClick={goToCurrentMonth} 
+                        className="flex items-center justify-center mx-1 px-3 py-2.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors duration-150 group"
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                          <span className="font-semibold text-blue-600 dark:text-blue-400 group-hover:text-blue-700 dark:group-hover:text-blue-300">
+                            {format(new Date(), 'MMMM yyyy')} (Current)
+                          </span>
+                        </div>
+                      </DropdownMenuItem>
+                      <div className="mx-3 my-2 border-t border-slate-100 dark:border-slate-700"></div>
+                    </>
+                  )}
+                  
+                  {/* Month navigation */}
+                  <div className="px-3 py-2 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                    Navigate Months
+                  </div>
+                  
+                  {/* Previous months */}
+                  {Array.from({ length: 3 }, (_, i) => {
+                    const monthDate = subMonths(selectedDate, i + 1);
+                    const isSelected = format(monthDate, 'yyyy-MM') === format(selectedDate, 'yyyy-MM');
+                    return (
+                      <DropdownMenuItem 
+                        key={`prev-${i}`}
+                        onClick={() => setSelectedDate(monthDate)} 
+                        className={`flex items-center justify-between mx-1 px-3 py-2.5 rounded-lg transition-colors duration-150 group ${
+                          isSelected 
+                            ? 'bg-slate-100 dark:bg-slate-700' 
+                            : 'hover:bg-slate-50 dark:hover:bg-slate-700'
+                        }`}
+                      >
+                        <span className={`font-medium ${
+                          isSelected 
+                            ? 'text-slate-900 dark:text-slate-100' 
+                            : 'text-slate-600 dark:text-slate-300'
+                        }`}>
+                          {format(monthDate, 'MMMM yyyy')}
                         </span>
-                      </div>
+                        {isSelected && (
+                          <div className="w-2 h-2 bg-slate-500 rounded-full"></div>
+                        )}
+                      </DropdownMenuItem>
+                    );
+                  })}
+                  
+                  {/* Current selected month if not current */}
+                  {!isCurrentMonth && (
+                    <DropdownMenuItem 
+                      className="flex items-center justify-between mx-1 px-3 py-2.5 rounded-lg bg-slate-100 dark:bg-slate-700"
+                      disabled
+                    >
+                      <span className="font-medium text-slate-900 dark:text-slate-100">
+                        {format(selectedDate, 'MMMM yyyy')}
+                      </span>
+                      <div className="w-2 h-2 bg-slate-500 rounded-full"></div>
                     </DropdownMenuItem>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-2xl">
-                    <DialogHeader>
-                      <DialogTitle>Manage Categories</DialogTitle>
-                    </DialogHeader>
-                    <CategoriesManager />
-                  </DialogContent>
-                </Dialog>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  )}
+                  
+                  {/* Future months */}
+                  {Array.from({ length: 3 }, (_, i) => {
+                    const monthDate = addMonths(selectedDate, i + 1);
+                    const isSelected = format(monthDate, 'yyyy-MM') === format(selectedDate, 'yyyy-MM');
+                    return (
+                      <DropdownMenuItem 
+                        key={`next-${i}`}
+                        onClick={() => setSelectedDate(monthDate)} 
+                        className={`flex items-center justify-between mx-1 px-3 py-2.5 rounded-lg transition-colors duration-150 group ${
+                          isSelected 
+                            ? 'bg-slate-100 dark:bg-slate-700' 
+                            : 'hover:bg-slate-50 dark:hover:bg-slate-700'
+                        }`}
+                      >
+                        <span className={`font-medium ${
+                          isSelected 
+                            ? 'text-slate-900 dark:text-slate-100' 
+                            : 'text-slate-600 dark:text-slate-300'
+                        }`}>
+                          {format(monthDate, 'MMMM yyyy')}
+                        </span>
+                        {isSelected && (
+                          <div className="w-2 h-2 bg-slate-500 rounded-full"></div>
+                        )}
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Next Month Button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={goToNextMonth}
+                className="h-7 w-7 p-0 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors"
+              >
+                <ChevronRight className="h-3.5 w-3.5 text-slate-600 dark:text-slate-300" />
+              </Button>
+            </div>
           </div>
 
           {/* Budget Card */}

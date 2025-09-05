@@ -8,10 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { IconSelector } from '@/components/ui/icon-selector';
-import { Plus, Edit } from 'lucide-react';
+import { Plus, Edit, Trash2 } from 'lucide-react';
 import { RecurringIncome, OneTimeIncome, RecurrenceType } from '@/types';
 import { useSupabaseFinance } from '@/contexts/SupabaseFinanceContext';
 import { format } from 'date-fns';
+import toast from 'react-hot-toast';
 
 interface UnifiedIncomeFormProps {
   recurringIncome?: RecurringIncome;
@@ -26,9 +27,53 @@ export const UnifiedIncomeForm: React.FC<UnifiedIncomeFormProps> = ({
   onClose,
   children 
 }) => {
-  const { addRecurringIncome, updateRecurringIncome, addOneTimeIncome, updateOneTimeIncome } = useSupabaseFinance();
+  const { addRecurringIncome, updateRecurringIncome, addOneTimeIncome, updateOneTimeIncome, deleteRecurringIncome, deleteOneTimeIncome } = useSupabaseFinance();
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState(recurringIncome ? 'recurring' : oneTimeIncome ? 'one-time' : 'one-time');
+
+  // Sync form data when switching tabs
+  const handleTabChange = (newTab: string) => {
+    const currentTab = activeTab;
+    
+    // Only sync if we're not editing existing items
+    if (!recurringIncome && !oneTimeIncome) {
+      if (currentTab === 'one-time' && newTab === 'recurring') {
+        // Moving from one-time to recurring - sync common fields
+        setRecurringFormData(prev => ({
+          ...prev,
+          name: oneTimeFormData.name || prev.name,
+          amount: oneTimeFormData.amount || prev.amount,
+        }));
+        setRecurringIconData(prev => ({
+          ...prev,
+          iconUrl: oneTimeIconData.iconUrl || prev.iconUrl,
+          iconType: oneTimeIconData.iconType || prev.iconType,
+          presetIconId: oneTimeIconData.presetIconId || prev.presetIconId,
+        }));
+        if (oneTimeIconFile) {
+          setRecurringIconFile(oneTimeIconFile);
+        }
+      } else if (currentTab === 'recurring' && newTab === 'one-time') {
+        // Moving from recurring to one-time - sync common fields
+        setOneTimeFormData(prev => ({
+          ...prev,
+          name: recurringFormData.name || prev.name,
+          amount: recurringFormData.amount || prev.amount,
+        }));
+        setOneTimeIconData(prev => ({
+          ...prev,
+          iconUrl: recurringIconData.iconUrl || prev.iconUrl,
+          iconType: recurringIconData.iconType || prev.iconType,
+          presetIconId: recurringIconData.presetIconId || prev.presetIconId,
+        }));
+        if (recurringIconFile) {
+          setOneTimeIconFile(recurringIconFile);
+        }
+      }
+    }
+    
+    setActiveTab(newTab);
+  };
   
   const [recurringFormData, setRecurringFormData] = useState({
     name: recurringIncome?.name || '',
@@ -148,6 +193,30 @@ export const UnifiedIncomeForm: React.FC<UnifiedIncomeFormProps> = ({
     onClose?.();
   };
 
+  const handleDeleteRecurringIncome = async () => {
+    if (!recurringIncome) return;
+    
+    try {
+      await deleteRecurringIncome(recurringIncome.id);
+      toast.success('Recurring income deleted');
+      handleClose();
+    } catch (error) {
+      toast.error('Failed to delete income');
+    }
+  };
+
+  const handleDeleteOneTimeIncome = async () => {
+    if (!oneTimeIncome) return;
+    
+    try {
+      await deleteOneTimeIncome(oneTimeIncome.id);
+      toast.success('One-time income deleted');
+      handleClose();
+    } catch (error) {
+      toast.error('Failed to delete income');
+    }
+  };
+
   const trigger = children || (
     <Button className="flex items-center gap-2">
       {(recurringIncome || oneTimeIncome) ? <Edit className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
@@ -168,7 +237,7 @@ export const UnifiedIncomeForm: React.FC<UnifiedIncomeFormProps> = ({
         </DialogHeader>
         
         {!(recurringIncome || oneTimeIncome) ? (
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="one-time">One-time</TabsTrigger>
               <TabsTrigger value="recurring">Recurring</TabsTrigger>
@@ -400,17 +469,34 @@ export const UnifiedIncomeForm: React.FC<UnifiedIncomeFormProps> = ({
               label="Income Icon (optional)"
             />
 
-            <div className="flex gap-2">
-              <Button type="submit" className="flex-1">
+            <div className="flex flex-col gap-3">
+              {/* Primary action button */}
+              <Button type="submit" className="w-full h-12 sm:h-10 text-base sm:text-sm font-semibold">
                 Update Income
               </Button>
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => setOpen(false)}
-              >
-                Cancel
-              </Button>
+              
+              {/* Secondary actions row */}
+              <div className="flex gap-2">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setOpen(false)}
+                  className="flex-1 h-12 sm:h-10 text-base sm:text-sm"
+                >
+                  Cancel
+                </Button>
+                {recurringIncome && (
+                  <Button 
+                    type="button" 
+                    variant="destructive"
+                    onClick={handleDeleteRecurringIncome}
+                    className="flex-1 h-12 sm:h-10 text-base sm:text-sm"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </Button>
+                )}
+              </div>
             </div>
           </form>
         ) : (
@@ -459,17 +545,34 @@ export const UnifiedIncomeForm: React.FC<UnifiedIncomeFormProps> = ({
               label="Income Icon (optional)"
             />
 
-            <div className="flex gap-2">
-              <Button type="submit" className="flex-1">
+            <div className="flex flex-col gap-3">
+              {/* Primary action button */}
+              <Button type="submit" className="w-full h-12 sm:h-10 text-base sm:text-sm font-semibold">
                 Update Income
               </Button>
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => setOpen(false)}
-              >
-                Cancel
-              </Button>
+              
+              {/* Secondary actions row */}
+              <div className="flex gap-2">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setOpen(false)}
+                  className="flex-1 h-12 sm:h-10 text-base sm:text-sm"
+                >
+                  Cancel
+                </Button>
+                {oneTimeIncome && (
+                  <Button 
+                    type="button" 
+                    variant="destructive"
+                    onClick={handleDeleteOneTimeIncome}
+                    className="flex-1 h-12 sm:h-10 text-base sm:text-sm"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </Button>
+                )}
+              </div>
             </div>
           </form>
         )}

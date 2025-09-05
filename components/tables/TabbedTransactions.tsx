@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2, Plus } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Edit, Trash2, Plus, Search, ArrowUpDown } from 'lucide-react';
 import { useSupabaseFinance } from '@/contexts/SupabaseFinanceContext';
 import { formatCurrency } from '@/lib/calculations';
 import { format } from 'date-fns';
@@ -49,8 +51,11 @@ export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
   const { data, deleteRecurringIncome, deleteRecurringExpense, deleteOneTimeIncome, deleteOneTimeExpense } = useSupabaseFinance();
   const [deleteItem, setDeleteItem] = useState<{ type: string; id: string; name: string } | null>(null);
   const [activeTab, setActiveTab] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState('date-desc'); // date-desc, date-asc, amount-desc, amount-asc, name-asc
+  const [transactionTypeFilter, setTransactionTypeFilter] = useState('all'); // all, onetime, recurring
 
-  // Convert all transactions to a unified format
+  // Convert all transactions to a unified format with filtering and sorting
   const allTransactions = useMemo((): TransactionItem[] => {
     const transactions: TransactionItem[] = [];
 
@@ -128,9 +133,41 @@ export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
       }
     });
 
-    // Sort by date (most recent first)
-    return transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [data, monthStart, monthEnd]);
+    // Apply search filter
+    let filteredTransactions = transactions;
+    if (searchTerm.trim()) {
+      filteredTransactions = transactions.filter(transaction =>
+        transaction.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Apply transaction type filter
+    if (transactionTypeFilter !== 'all') {
+      filteredTransactions = filteredTransactions.filter(transaction =>
+        transaction.subtype === transactionTypeFilter
+      );
+    }
+
+    // Apply sorting
+    const sortedTransactions = [...filteredTransactions].sort((a, b) => {
+      switch (sortBy) {
+        case 'date-desc':
+          return new Date(b.date).getTime() - new Date(a.date).getTime();
+        case 'date-asc':
+          return new Date(a.date).getTime() - new Date(b.date).getTime();
+        case 'amount-desc':
+          return b.amount - a.amount;
+        case 'amount-asc':
+          return a.amount - b.amount;
+        case 'name-asc':
+          return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+        default:
+          return new Date(b.date).getTime() - new Date(a.date).getTime();
+      }
+    });
+
+    return sortedTransactions;
+  }, [data, monthStart, monthEnd, searchTerm, sortBy, transactionTypeFilter]);
 
   const getCategoryName = (categoryId?: string): string => {
     if (!categoryId) return '';
@@ -216,6 +253,77 @@ export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
     );
   };
 
+  // Mobile edit state
+  const editButtonRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
+
+  // Drag state
+  const [dragState, setDragState] = useState<{
+    isDragging: boolean;
+    startX: number;
+    currentX: number;
+    transactionId: string;
+  } | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent, transaction: TransactionItem) => {
+    const touch = e.touches[0];
+    setDragState({
+      isDragging: false,
+      startX: touch.clientX,
+      currentX: touch.clientX,
+      transactionId: transaction.id
+    });
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!dragState) return;
+    
+    const touch = e.touches[0];
+    const deltaX = touch.clientX - dragState.startX;
+    
+    setDragState(prev => prev ? {
+      ...prev,
+      isDragging: Math.abs(deltaX) > 10,
+      currentX: touch.clientX
+    } : null);
+  };
+
+  const handleTouchEnd = (transaction: TransactionItem) => {
+    if (!dragState) return;
+    
+    const deltaX = dragState.currentX - dragState.startX;
+    const threshold = 100; // pixels
+    
+    if (Math.abs(deltaX) > threshold) {
+      if (deltaX > 0) {
+        // Swipe right - edit
+        setTimeout(() => {
+          const button = editButtonRefs.current[transaction.id];
+          if (button) {
+            button.click();
+          }
+        }, 200); // Small delay to let overlay animation finish
+      } else {
+        // Swipe left - delete
+        const normalizedSubtype = transaction.subtype === 'onetime' ? 'one-time' : transaction.subtype;
+        const deleteType = `${normalizedSubtype}-${transaction.type}`;
+        handleDeleteClick(deleteType, transaction.id, transaction.name);
+      }
+    } else if (!dragState.isDragging) {
+      // Tap without drag - open edit on mobile
+      const isMobile = window.innerWidth < 768;
+      if (isMobile) {
+        setTimeout(() => {
+          const button = editButtonRefs.current[transaction.id];
+          if (button) {
+            button.click();
+          }
+        }, 100);
+      }
+    }
+    
+    setDragState(null);
+  };
+
   const renderTransaction = (transaction: TransactionItem) => {
     const isIncome = transaction.type === 'income';
     const bgColor = isIncome ? 'bg-green-50/70 dark:bg-green-950/30' : 'bg-red-50/70 dark:bg-red-950/30';
@@ -232,10 +340,75 @@ export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
     const normalizedSubtype = transaction.subtype === 'onetime' ? 'one-time' : transaction.subtype;
     const deleteType = `${normalizedSubtype}-${transaction.type}`;
 
+    // Calculate drag overlay properties
+    let overlayOpacity = 0;
+    let overlayColor = '';
+    let overlayIcon = null;
+    let overlayText = '';
+    let overlayPosition = '';
+    let overlayWidth = '0%';
+    
+    if (dragState && dragState.transactionId === transaction.id && dragState.isDragging) {
+      const deltaX = dragState.currentX - dragState.startX;
+      const maxOpacity = 0.8;
+      const threshold = 100;
+      const progress = Math.min(1, Math.abs(deltaX) / threshold);
+      
+      if (deltaX > 10) {
+        // Swipe right - edit (blue) - slides from left
+        overlayOpacity = maxOpacity;
+        overlayWidth = `${Math.min(100, (Math.abs(deltaX) / threshold) * 100)}%`;
+        overlayColor = 'bg-blue-500';
+        overlayIcon = <Edit className="h-6 w-6 text-white" />;
+        overlayText = 'Edit';
+        overlayPosition = 'left-0';
+      } else if (deltaX < -10) {
+        // Swipe left - delete (red) - slides from right
+        overlayOpacity = maxOpacity;
+        overlayWidth = `${Math.min(100, (Math.abs(deltaX) / threshold) * 100)}%`;
+        overlayColor = 'bg-red-500';
+        overlayIcon = <Trash2 className="h-6 w-6 text-white" />;
+        overlayText = 'Delete';
+        overlayPosition = 'right-0';
+      }
+    }
+
+    const EditFormComponent = isIncome ? UnifiedIncomeForm : UnifiedExpenseForm;
+    const editProps = isIncome 
+      ? {
+          recurringIncome: transaction.subtype === 'recurring' ? originalTransaction as any : undefined,
+          oneTimeIncome: transaction.subtype === 'onetime' ? originalTransaction as any : undefined,
+        }
+      : {
+          recurringExpense: transaction.subtype === 'recurring' ? originalTransaction as any : undefined,
+          oneTimeExpense: transaction.subtype === 'onetime' ? originalTransaction as any : undefined,
+        };
+
     return (
-      <div
-        key={transaction.id}
-        className={`flex items-center gap-3 p-3 sm:p-4 rounded-xl border ${bgColor} ${borderColor} transition-all duration-200 hover:shadow-sm dark:hover:shadow-lg`}
+      <div key={transaction.id}>
+        <div className="relative overflow-hidden rounded-xl">
+          {/* Swipe overlay */}
+          {dragState && dragState.transactionId === transaction.id && overlayOpacity > 0 && (
+            <div
+              className={`absolute top-0 bottom-0 ${overlayPosition} ${overlayColor} flex items-center justify-center z-10 transition-all duration-150`}
+              style={{ 
+                opacity: overlayOpacity,
+                width: overlayWidth
+              }}
+            >
+              <div className="flex flex-col items-center gap-1">
+                {overlayIcon}
+                <span className="text-white text-sm font-medium">{overlayText}</span>
+              </div>
+            </div>
+          )}
+          
+          {/* Transaction item */}
+          <div
+            className={`flex items-center gap-3 p-3 sm:p-4 rounded-xl border ${bgColor} ${borderColor} transition-all duration-200 hover:shadow-sm dark:hover:shadow-lg cursor-pointer sm:cursor-default touch-pan-y select-none relative`}
+            onTouchStart={(e) => handleTouchStart(e, transaction)}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={() => handleTouchEnd(transaction)}
       >
         {/* Avatar with icon or first letter */}
         <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center flex-shrink-0 border-2 border-white/60 dark:border-slate-600/60 shadow-sm overflow-hidden">
@@ -285,37 +458,38 @@ export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
             {isIncome ? '+' : ''}{formatCurrency(transaction.amount)}
           </p>
           
-          {/* Action buttons */}
-          <div className="flex items-center gap-1">
-            {isIncome ? (
-              <UnifiedIncomeForm 
-                recurringIncome={transaction.subtype === 'recurring' && isIncome ? originalTransaction as any : undefined}
-                oneTimeIncome={transaction.subtype === 'onetime' && isIncome ? originalTransaction as any : undefined}
-              >
+              {/* Action buttons - hidden on mobile, visible on desktop */}
+              <div className="hidden sm:flex items-center gap-1">
+                <EditFormComponent {...editProps}>
                 <Button variant="ghost" size="sm" className="h-7 w-7 p-0 hover:bg-gray-200 dark:hover:bg-gray-600">
                   <Edit className="h-3 w-3" />
                 </Button>
-              </UnifiedIncomeForm>
-            ) : (
-              <UnifiedExpenseForm 
-                recurringExpense={transaction.subtype === 'recurring' && !isIncome ? originalTransaction as any : undefined}
-                oneTimeExpense={transaction.subtype === 'onetime' && !isIncome ? originalTransaction as any : undefined}
-              >
-                <Button variant="ghost" size="sm" className="h-7 w-7 p-0 hover:bg-gray-200 dark:hover:bg-gray-600">
-                  <Edit className="h-3 w-3" />
-                </Button>
-              </UnifiedExpenseForm>
-            )}
+                </EditFormComponent>
             <Button
               variant="ghost"
               size="sm"
               className="h-7 w-7 p-0 hover:bg-gray-200 dark:hover:bg-gray-600"
-              onClick={() => handleDeleteClick(deleteType, transaction.id, transaction.name)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteClick(deleteType, transaction.id, transaction.name);
+                  }}
             >
               <Trash2 className="h-3 w-3" />
             </Button>
           </div>
         </div>
+          </div>
+        </div>
+
+        {/* Hidden mobile edit trigger */}
+        <EditFormComponent {...editProps}>
+          <button 
+            ref={(btn) => {
+              editButtonRefs.current[transaction.id] = btn;
+            }}
+            style={{ display: 'none' }}
+          />
+        </EditFormComponent>
       </div>
     );
   };
@@ -360,6 +534,50 @@ export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
           <div className="flex items-center justify-between mb-4 sm:mb-6">
             <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100">Transactions</h2>
             <DynamicAddButton />
+          </div>
+
+          {/* Search and Filter Controls */}
+          <div className="flex flex-col gap-3 mb-4 sm:mb-6">
+            {/* Search Bar */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Search transactions..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            
+            {/* Filter and Sort Controls */}
+            <div className="flex flex-row gap-3">
+              {/* Transaction Type Filter */}
+              <Select value={transactionTypeFilter} onValueChange={setTransactionTypeFilter}>
+                <SelectTrigger className="flex-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value="onetime">One-time</SelectItem>
+                  <SelectItem value="recurring">Recurring</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Sort Dropdown */}
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="flex-1">
+                  <ArrowUpDown className="h-4 w-4 mr-2" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="date-desc">Newest First</SelectItem>
+                  <SelectItem value="date-asc">Oldest First</SelectItem>
+                  <SelectItem value="amount-desc">Amount: High to Low</SelectItem>
+                  <SelectItem value="amount-asc">Amount: Low to High</SelectItem>
+                  <SelectItem value="name-asc">Name: A to Z</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

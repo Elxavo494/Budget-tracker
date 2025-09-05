@@ -11,13 +11,15 @@ import { FloatingSelect } from '@/components/ui/floating-select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { IconSelector } from '@/components/ui/icon-selector';
-import { Plus, Edit, Camera } from 'lucide-react';
+import { Plus, Edit, Camera, Trash2 } from 'lucide-react';
 import { RecurringExpense, OneTimeExpense, RecurrenceType } from '@/types';
 import { useSupabaseFinance } from '@/contexts/SupabaseFinanceContext';
+import { CategoryForm } from '@/components/forms/CategoryForm';
 import { format } from 'date-fns';
 import { extractReceiptFieldsFromImage } from '@/lib/receipt-ocr';
 import { suggestCategory } from '@/lib/smart-categorization';
 import { inferPresetIconId } from '@/lib/merchant-inference';
+import toast from 'react-hot-toast';
 
 interface UnifiedExpenseFormProps {
   recurringExpense?: RecurringExpense;
@@ -32,9 +34,55 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
   onClose,
   children 
 }) => {
-  const { data, addRecurringExpense, updateRecurringExpense, addOneTimeExpense, updateOneTimeExpense } = useSupabaseFinance();
+  const { data, addRecurringExpense, updateRecurringExpense, addOneTimeExpense, updateOneTimeExpense, deleteRecurringExpense, deleteOneTimeExpense } = useSupabaseFinance();
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState(recurringExpense ? 'recurring' : oneTimeExpense ? 'one-time' : 'one-time');
+
+  // Sync form data when switching tabs
+  const handleTabChange = (newTab: string) => {
+    const currentTab = activeTab;
+    
+    // Only sync if we're not editing existing items
+    if (!recurringExpense && !oneTimeExpense) {
+      if (currentTab === 'one-time' && newTab === 'recurring') {
+        // Moving from one-time to recurring - sync common fields
+        setRecurringFormData(prev => ({
+          ...prev,
+          name: oneTimeFormData.name || prev.name,
+          amount: oneTimeFormData.amount || prev.amount,
+          categoryId: oneTimeFormData.categoryId || prev.categoryId,
+        }));
+        setRecurringIconData(prev => ({
+          ...prev,
+          iconUrl: oneTimeIconData.iconUrl || prev.iconUrl,
+          iconType: oneTimeIconData.iconType || prev.iconType,
+          presetIconId: oneTimeIconData.presetIconId || prev.presetIconId,
+        }));
+        if (oneTimeIconFile) {
+          setRecurringIconFile(oneTimeIconFile);
+        }
+      } else if (currentTab === 'recurring' && newTab === 'one-time') {
+        // Moving from recurring to one-time - sync common fields
+        setOneTimeFormData(prev => ({
+          ...prev,
+          name: recurringFormData.name || prev.name,
+          amount: recurringFormData.amount || prev.amount,
+          categoryId: recurringFormData.categoryId || prev.categoryId,
+        }));
+        setOneTimeIconData(prev => ({
+          ...prev,
+          iconUrl: recurringIconData.iconUrl || prev.iconUrl,
+          iconType: recurringIconData.iconType || prev.iconType,
+          presetIconId: recurringIconData.presetIconId || prev.presetIconId,
+        }));
+        if (recurringIconFile) {
+          setOneTimeIconFile(recurringIconFile);
+        }
+      }
+    }
+    
+    setActiveTab(newTab);
+  };
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isScanning, setIsScanning] = useState(false);
   
@@ -221,6 +269,30 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
     onClose?.();
   };
 
+  const handleDeleteRecurringExpense = async () => {
+    if (!recurringExpense) return;
+    
+    try {
+      await deleteRecurringExpense(recurringExpense.id);
+      toast.success('Recurring expense deleted');
+      handleClose();
+    } catch (error) {
+      toast.error('Failed to delete expense');
+    }
+  };
+
+  const handleDeleteOneTimeExpense = async () => {
+    if (!oneTimeExpense) return;
+    
+    try {
+      await deleteOneTimeExpense(oneTimeExpense.id);
+      toast.success('One-time expense deleted');
+      handleClose();
+    } catch (error) {
+      toast.error('Failed to delete expense');
+    }
+  };
+
   const trigger = children || (
     <Button className="flex items-center gap-2">
       {(recurringExpense || oneTimeExpense) ? <Edit className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
@@ -244,7 +316,7 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
         </DialogHeader>
         
         {!(recurringExpense || oneTimeExpense) ? (
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
             <TabsList className="grid w-full grid-cols-2 h-12 sm:h-10">
               <TabsTrigger value="one-time" className="text-base sm:text-sm font-medium">One-time</TabsTrigger>
               <TabsTrigger value="recurring" className="text-base sm:text-sm font-medium">Recurring</TabsTrigger>
@@ -291,17 +363,31 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
                     onChange={(e) => setOneTimeFormData({ ...oneTimeFormData, amount: e.target.value })}
                     required
                   />
-                  <FloatingSelect
-                    label="Category"
-                    value={oneTimeFormData.categoryId}
-                    onValueChange={(value) => setOneTimeFormData({ ...oneTimeFormData, categoryId: value })}
-                  >
-                    {data.categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </FloatingSelect>
+                  <div className="flex gap-2 items-end">
+                    <div className="flex-1">
+                      <FloatingSelect
+                        label="Category"
+                        value={oneTimeFormData.categoryId}
+                        onValueChange={(value) => setOneTimeFormData({ ...oneTimeFormData, categoryId: value })}
+                      >
+                        {data.categories.map((category) => (
+                          <SelectItem key={category.id} value={category.id}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
+                      </FloatingSelect>
+                    </div>
+                    <CategoryForm>
+                      <Button 
+                        type="button"
+                        variant="outline" 
+                        size="sm" 
+                        className="h-10 w-10 p-0 flex-shrink-0"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </CategoryForm>
+                  </div>
                   <FloatingInput
                     id="onetime-date"
                     label="Date"
@@ -359,17 +445,31 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
                     onChange={(e) => setRecurringFormData({ ...recurringFormData, amount: e.target.value })}
                     required
                   />
-                  <FloatingSelect
-                    label="Category"
-                    value={recurringFormData.categoryId}
-                    onValueChange={(value) => setRecurringFormData({ ...recurringFormData, categoryId: value })}
-                  >
-                    {data.categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </FloatingSelect>
+                  <div className="flex gap-2 items-end">
+                    <div className="flex-1">
+                      <FloatingSelect
+                        label="Category"
+                        value={recurringFormData.categoryId}
+                        onValueChange={(value) => setRecurringFormData({ ...recurringFormData, categoryId: value })}
+                      >
+                        {data.categories.map((category) => (
+                          <SelectItem key={category.id} value={category.id}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
+                      </FloatingSelect>
+                    </div>
+                    <CategoryForm>
+                      <Button 
+                        type="button"
+                        variant="outline" 
+                        size="sm" 
+                        className="h-10 w-10 p-0 flex-shrink-0"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </CategoryForm>
+                  </div>
                   <FloatingSelect
                     label="Recurrence"
                     value={recurringFormData.recurrence}
@@ -468,17 +568,31 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
                 required
               />
 
-              <FloatingSelect
-                label="Category"
-                value={recurringFormData.categoryId}
-                onValueChange={(value) => setRecurringFormData({ ...recurringFormData, categoryId: value })}
-              >
-                {data.categories.map((category) => (
-                  <SelectItem key={category.id} value={category.id}>
-                    {category.name}
-                  </SelectItem>
-                ))}
-              </FloatingSelect>
+              <div className="flex gap-2 items-end">
+                <div className="flex-1">
+                  <FloatingSelect
+                    label="Category"
+                    value={recurringFormData.categoryId}
+                    onValueChange={(value) => setRecurringFormData({ ...recurringFormData, categoryId: value })}
+                  >
+                    {data.categories.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </FloatingSelect>
+                </div>
+                <CategoryForm>
+                  <Button 
+                    type="button"
+                    variant="outline" 
+                    size="sm" 
+                    className="h-10 w-10 p-0 flex-shrink-0"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </CategoryForm>
+              </div>
 
               <FloatingSelect
                 label="Recurrence"
@@ -519,21 +633,37 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
               label="Expense Icon (optional)"
             />
 
-            <div className="flex flex-col-reverse sm:flex-row gap-3 sm:gap-2 pt-2">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => setOpen(false)}
-                className="w-full sm:w-auto h-12 sm:h-10 text-base sm:text-sm"
-              >
-                Cancel
-              </Button>
+            <div className="flex flex-col gap-3 pt-2">
+              {/* Primary action button */}
               <Button 
                 type="submit" 
-                className="w-full sm:flex-1 h-12 sm:h-10 text-base sm:text-sm font-semibold"
+                className="w-full h-12 sm:h-10 text-base sm:text-sm font-semibold"
               >
                 Update Expense
               </Button>
+              
+              {/* Secondary actions row */}
+              <div className="flex gap-2">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setOpen(false)}
+                  className="flex-1 h-12 sm:h-10 text-base sm:text-sm"
+                >
+                  Cancel
+                </Button>
+                {recurringExpense && (
+                  <Button 
+                    type="button" 
+                    variant="destructive"
+                    onClick={handleDeleteRecurringExpense}
+                    className="flex-1 h-12 sm:h-10 text-base sm:text-sm"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </Button>
+                )}
+              </div>
             </div>
           </form>
         ) : (
@@ -557,17 +687,31 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
                 required
               />
 
-              <FloatingSelect
-                label="Category"
-                value={oneTimeFormData.categoryId}
-                onValueChange={(value) => setOneTimeFormData({ ...oneTimeFormData, categoryId: value })}
-              >
-                {data.categories.map((category) => (
-                  <SelectItem key={category.id} value={category.id}>
-                    {category.name}
-                  </SelectItem>
-                ))}
-              </FloatingSelect>
+              <div className="flex gap-2 items-end">
+                <div className="flex-1">
+                  <FloatingSelect
+                    label="Category"
+                    value={oneTimeFormData.categoryId}
+                    onValueChange={(value) => setOneTimeFormData({ ...oneTimeFormData, categoryId: value })}
+                  >
+                    {data.categories.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </FloatingSelect>
+                </div>
+                <CategoryForm>
+                  <Button 
+                    type="button"
+                    variant="outline" 
+                    size="sm" 
+                    className="h-10 w-10 p-0 flex-shrink-0"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </CategoryForm>
+              </div>
 
               <FloatingInput
                 id="edit-onetime-date"
@@ -588,21 +732,37 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
               label="Expense Icon (optional)"
             />
 
-            <div className="flex flex-col-reverse sm:flex-row gap-3 sm:gap-2 pt-2">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => setOpen(false)}
-                className="w-full sm:w-auto h-12 sm:h-10 text-base sm:text-sm"
-              >
-                Cancel
-              </Button>
+            <div className="flex flex-col gap-3 pt-2">
+              {/* Primary action button */}
               <Button 
                 type="submit" 
-                className="w-full sm:flex-1 h-12 sm:h-10 text-base sm:text-sm font-semibold"
+                className="w-full h-12 sm:h-10 text-base sm:text-sm font-semibold"
               >
                 Update Expense
               </Button>
+              
+              {/* Secondary actions row */}
+              <div className="flex gap-2">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setOpen(false)}
+                  className="flex-1 h-12 sm:h-10 text-base sm:text-sm"
+                >
+                  Cancel
+                </Button>
+                {oneTimeExpense && (
+                  <Button 
+                    type="button" 
+                    variant="destructive"
+                    onClick={handleDeleteOneTimeExpense}
+                    className="flex-1 h-12 sm:h-10 text-base sm:text-sm"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </Button>
+                )}
+              </div>
             </div>
           </form>
         )}
