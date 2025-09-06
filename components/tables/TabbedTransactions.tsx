@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Edit, Trash2, Plus, Search, ArrowUpDown } from 'lucide-react';
+import { Edit, Trash2, Plus, Search, ArrowUpDown, ChevronDown, ChevronUp, Filter } from 'lucide-react';
 import { useSupabaseFinance } from '@/contexts/SupabaseFinanceContext';
 import { formatCurrency } from '@/lib/calculations';
 import { format } from 'date-fns';
@@ -54,6 +54,41 @@ export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('date-desc'); // date-desc, date-asc, amount-desc, amount-asc, name-asc
   const [transactionTypeFilter, setTransactionTypeFilter] = useState('all'); // all, onetime, recurring
+  const [categoryFilter, setCategoryFilter] = useState('all'); // all, or specific category id
+  
+  // Show More state - default to showing 5 items per tab
+  const [visibleCounts, setVisibleCounts] = useState({
+    all: 5,
+    income: 5,
+    spendings: 5
+  });
+
+  const INITIAL_VISIBLE_COUNT = 5;
+
+  // Helper functions for show more/less functionality
+  const handleShowMore = (tab: keyof typeof visibleCounts, totalCount: number) => {
+    setVisibleCounts(prev => ({
+      ...prev,
+      [tab]: totalCount // Show all remaining transactions
+    }));
+  };
+
+  const handleShowLess = (tab: keyof typeof visibleCounts) => {
+    setVisibleCounts(prev => ({
+      ...prev,
+      [tab]: INITIAL_VISIBLE_COUNT
+    }));
+  };
+
+  // Handle tab change and reset visible count for consistency
+  const handleTabChange = (newTab: string) => {
+    setActiveTab(newTab);
+    // Reset the visible count for the new tab to ensure consistency
+    setVisibleCounts(prev => ({
+      ...prev,
+      [newTab as keyof typeof visibleCounts]: INITIAL_VISIBLE_COUNT
+    }));
+  };
 
   // Convert all transactions to a unified format with filtering and sorting
   const allTransactions = useMemo((): TransactionItem[] => {
@@ -148,6 +183,13 @@ export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
       );
     }
 
+    // Apply category filter
+    if (categoryFilter !== 'all') {
+      filteredTransactions = filteredTransactions.filter(transaction =>
+        transaction.categoryId === categoryFilter
+      );
+    }
+
     // Apply sorting
     const sortedTransactions = [...filteredTransactions].sort((a, b) => {
       switch (sortBy) {
@@ -167,7 +209,7 @@ export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
     });
 
     return sortedTransactions;
-  }, [data, monthStart, monthEnd, searchTerm, sortBy, transactionTypeFilter]);
+  }, [data, monthStart, monthEnd, searchTerm, sortBy, transactionTypeFilter, categoryFilter]);
 
   const getCategoryName = (categoryId?: string): string => {
     if (!categoryId) return '';
@@ -399,7 +441,7 @@ export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
             onTouchStart={(e) => handleTouchStart(e, transaction)}
             onTouchMove={handleTouchMove}
             onTouchEnd={() => handleTouchEnd(transaction)}
-      >
+          >
         {/* Avatar with icon or first letter */}
         <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center flex-shrink-0 border-2 border-white/60 dark:border-slate-600/60 shadow-sm overflow-hidden">
           {renderTransactionIcon(transaction)}
@@ -460,6 +502,45 @@ export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
           </div>
         </div>
 
+      </div>
+    );
+  };
+
+  // Show More Button Component
+  const ShowMoreButton = ({ 
+    tab, 
+    totalCount, 
+    visibleCount 
+  }: { 
+    tab: keyof typeof visibleCounts; 
+    totalCount: number; 
+    visibleCount: number; 
+  }) => {
+    if (totalCount <= INITIAL_VISIBLE_COUNT) return null;
+
+    return (
+      <div className="flex justify-center pt-4">
+        {visibleCount < totalCount ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleShowMore(tab, totalCount)}
+            className="text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 gap-2"
+          >
+            <ChevronDown className="h-4 w-4" />
+            Show All ({totalCount - visibleCount} more)
+          </Button>
+        ) : (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleShowLess(tab)}
+            className="text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 gap-2"
+          >
+            <ChevronUp className="h-4 w-4" />
+            Show Less
+          </Button>
+        )}
       </div>
     );
   };
@@ -533,6 +614,28 @@ export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
                 </SelectContent>
               </Select>
 
+              {/* Category Filter */}
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="flex-1 h-12 bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700">
+                  <Filter className="h-4 w-4 mr-2" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {data.categories.map(category => (
+                    <SelectItem key={category.id} value={category.id}>
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-3 h-3 rounded-full" 
+                          style={{ backgroundColor: category.color }}
+                        />
+                        {category.name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
               {/* Sort Dropdown */}
               <Select value={sortBy} onValueChange={setSortBy}>
                 <SelectTrigger className="flex-1 h-12 bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700">
@@ -550,7 +653,7 @@ export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
             </div>
           </div>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
             <TabsList className="grid w-full grid-cols-3 mb-4 sm:mb-6 h-10 sm:h-11">
               <TabsTrigger value="all" className="text-xs sm:text-sm">All</TabsTrigger>
               <TabsTrigger value="income" className="text-xs sm:text-sm">Income</TabsTrigger>
@@ -566,38 +669,61 @@ export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
                   </p>
                 </div>
               ) : (
-                allTransactions.map(renderTransaction)
+                <>
+                  {allTransactions.slice(0, visibleCounts.all).map(renderTransaction)}
+                  <ShowMoreButton 
+                    tab="all" 
+                    totalCount={allTransactions.length} 
+                    visibleCount={visibleCounts.all} 
+                  />
+                </>
               )}
             </TabsContent>
 
             <TabsContent value="income" className="space-y-2 sm:space-y-3 mt-0">
-              {allTransactions.filter(t => t.type === 'income').length === 0 ? (
-                <div className="text-center py-8 sm:py-12">
-                  <p className="text-gray-500 dark:text-gray-400 mb-2 text-sm sm:text-base">No income transactions</p>
-                  <p className="text-xs sm:text-sm text-gray-400 dark:text-gray-500">
-                    Add your salary or other income sources
-                  </p>
-                </div>
-              ) : (
-                allTransactions
-                  .filter(t => t.type === 'income')
-                  .map(renderTransaction)
-              )}
+              {(() => {
+                const incomeTransactions = allTransactions.filter(t => t.type === 'income');
+                return incomeTransactions.length === 0 ? (
+                  <div className="text-center py-8 sm:py-12">
+                    <p className="text-gray-500 dark:text-gray-400 mb-2 text-sm sm:text-base">No income transactions</p>
+                    <p className="text-xs sm:text-sm text-gray-400 dark:text-gray-500">
+                      Add your salary or other income sources
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    {incomeTransactions.slice(0, visibleCounts.income).map(renderTransaction)}
+                    <ShowMoreButton 
+                      tab="income" 
+                      totalCount={incomeTransactions.length} 
+                      visibleCount={visibleCounts.income} 
+                    />
+                  </>
+                );
+              })()}
             </TabsContent>
 
             <TabsContent value="spendings" className="space-y-2 sm:space-y-3 mt-0">
-              {allTransactions.filter(t => t.type === 'expense').length === 0 ? (
-                <div className="text-center py-8 sm:py-12">
-                  <p className="text-gray-500 dark:text-gray-400 mb-2 text-sm sm:text-base">No expense transactions</p>
-                  <p className="text-xs sm:text-sm text-gray-400 dark:text-gray-500">
-                    Track your spending by adding expenses
-                  </p>
-                </div>
-              ) : (
-                allTransactions
-                  .filter(t => t.type === 'expense')
-                  .map(renderTransaction)
-              )}
+              {(() => {
+                const expenseTransactions = allTransactions.filter(t => t.type === 'expense');
+                return expenseTransactions.length === 0 ? (
+                  <div className="text-center py-8 sm:py-12">
+                    <p className="text-gray-500 dark:text-gray-400 mb-2 text-sm sm:text-base">No expense transactions</p>
+                    <p className="text-xs sm:text-sm text-gray-400 dark:text-gray-500">
+                      Track your spending by adding expenses
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    {expenseTransactions.slice(0, visibleCounts.spendings).map(renderTransaction)}
+                    <ShowMoreButton 
+                      tab="spendings" 
+                      totalCount={expenseTransactions.length} 
+                      visibleCount={visibleCounts.spendings} 
+                    />
+                  </>
+                );
+              })()}
             </TabsContent>
           </Tabs>
         </CardContent>

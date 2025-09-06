@@ -5,13 +5,19 @@ import toast from 'react-hot-toast';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { supabase } from '@/lib/supabase';
 import { uploadTransactionIcon, deleteTransactionIcon } from '@/lib/image-utils';
+import { formatCurrency } from '@/lib/calculations';
 import { 
   FinanceData, 
   Category, 
   RecurringIncome, 
   RecurringExpense, 
   OneTimeIncome, 
-  OneTimeExpense 
+  OneTimeExpense,
+  CategoryBudget,
+  SavingsGoal,
+  BudgetAlert,
+  GoalMilestone,
+  GoalContribution
 } from '@/types';
 
 interface SupabaseFinanceContextType {
@@ -37,6 +43,17 @@ interface SupabaseFinanceContextType {
   reorderRecurringExpenses: (items: RecurringExpense[]) => Promise<void>;
   reorderOneTimeIncomes: (items: OneTimeIncome[]) => Promise<void>;
   reorderOneTimeExpenses: (items: OneTimeExpense[]) => Promise<void>;
+  // Budget methods
+  addCategoryBudget: (categoryId: string, monthlyLimit: number, alertThreshold: number) => Promise<void>;
+  updateCategoryBudget: (budgetId: string, monthlyLimit: number, alertThreshold: number, isActive: boolean) => Promise<void>;
+  deleteCategoryBudget: (budgetId: string) => Promise<void>;
+  // Goals methods
+  addSavingsGoal: (goal: Omit<SavingsGoal, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  updateSavingsGoal: (goalId: string, updates: Partial<SavingsGoal>) => Promise<void>;
+  deleteSavingsGoal: (goalId: string) => Promise<void>;
+  addGoalContribution: (goalId: string, amount: number, description?: string) => Promise<void>;
+  // Alert methods
+  updateBudgetAlert: (alertType: string, isEnabled: boolean) => Promise<void>;
 }
 
 const SupabaseFinanceContext = createContext<SupabaseFinanceContextType | undefined>(undefined);
@@ -49,6 +66,11 @@ export const SupabaseFinanceProvider: React.FC<{ children: React.ReactNode }> = 
     recurringExpenses: [],
     oneTimeIncomes: [],
     oneTimeExpenses: [],
+    categoryBudgets: [],
+    savingsGoals: [],
+    budgetAlerts: [],
+    goalMilestones: [],
+    goalContributions: [],
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -76,6 +98,11 @@ export const SupabaseFinanceProvider: React.FC<{ children: React.ReactNode }> = 
         recurringExpenses: [],
         oneTimeIncomes: [],
         oneTimeExpenses: [],
+        categoryBudgets: [],
+        savingsGoals: [],
+        budgetAlerts: [],
+        goalMilestones: [],
+        goalContributions: [],
       });
       setLoading(false);
     }
@@ -103,6 +130,11 @@ export const SupabaseFinanceProvider: React.FC<{ children: React.ReactNode }> = 
         supabase.from('recurring_expenses').select('*').order('created_at', { ascending: false }),
         supabase.from('one_time_incomes').select('*').order('date', { ascending: false }),
         supabase.from('one_time_expenses').select('*').order('date', { ascending: false }),
+        supabase.from('category_budgets').select('*').order('created_at', { ascending: false }),
+        supabase.from('savings_goals').select('*').order('created_at', { ascending: false }),
+        supabase.from('budget_alerts').select('*').order('created_at', { ascending: false }),
+        supabase.from('goal_milestones').select('*').order('achieved_at', { ascending: false }),
+        supabase.from('goal_contributions').select('*').order('contribution_date', { ascending: false }),
       ]);
 
       const timeoutPromise = new Promise((_, reject) => 
@@ -115,6 +147,11 @@ export const SupabaseFinanceProvider: React.FC<{ children: React.ReactNode }> = 
         recurringExpensesResult,
         oneTimeIncomesResult,
         oneTimeExpensesResult,
+        categoryBudgetsResult,
+        savingsGoalsResult,
+        budgetAlertsResult,
+        goalMilestonesResult,
+        goalContributionsResult,
       ] = await Promise.race([dataPromise, timeoutPromise]) as any;
 
 
@@ -133,6 +170,21 @@ export const SupabaseFinanceProvider: React.FC<{ children: React.ReactNode }> = 
       }
       if (oneTimeExpensesResult.error) {
         throw oneTimeExpensesResult.error;
+      }
+      if (categoryBudgetsResult.error) {
+        throw categoryBudgetsResult.error;
+      }
+      if (savingsGoalsResult.error) {
+        throw savingsGoalsResult.error;
+      }
+      if (budgetAlertsResult.error) {
+        throw budgetAlertsResult.error;
+      }
+      if (goalMilestonesResult.error) {
+        throw goalMilestonesResult.error;
+      }
+      if (goalContributionsResult.error) {
+        throw goalContributionsResult.error;
       }
 
       // Transform database results to match frontend types
@@ -190,6 +242,68 @@ export const SupabaseFinanceProvider: React.FC<{ children: React.ReactNode }> = 
           createdAt: expense.created_at,
         }));
 
+      const transformCategoryBudgets = (dbBudgets: any[]) => 
+        dbBudgets.map(budget => ({
+          id: budget.id,
+          categoryId: budget.category_id,
+          monthlyLimit: budget.monthly_limit,
+          alertThreshold: budget.alert_threshold,
+          isActive: budget.is_active,
+          createdAt: budget.created_at,
+          updatedAt: budget.updated_at,
+        }));
+
+      const transformSavingsGoals = (dbGoals: any[]) => 
+        dbGoals.map(goal => ({
+          id: goal.id,
+          name: goal.name,
+          description: goal.description,
+          targetAmount: goal.target_amount,
+          currentAmount: goal.current_amount,
+          targetDate: goal.target_date,
+          priority: goal.priority,
+          color: goal.color,
+          iconUrl: goal.icon_url,
+          iconType: goal.icon_type,
+          presetIconId: goal.preset_icon_id,
+          isActive: goal.is_active,
+          isCompleted: goal.is_completed,
+          completedAt: goal.completed_at,
+          createdAt: goal.created_at,
+          updatedAt: goal.updated_at,
+        }));
+
+      const transformBudgetAlerts = (dbAlerts: any[]) => 
+        dbAlerts.map(alert => ({
+          id: alert.id,
+          alertType: alert.alert_type,
+          isEnabled: alert.is_enabled,
+          thresholdPercentage: alert.threshold_percentage,
+          milestonePercentage: alert.milestone_percentage,
+          createdAt: alert.created_at,
+          updatedAt: alert.updated_at,
+        }));
+
+      const transformGoalMilestones = (dbMilestones: any[]) => 
+        dbMilestones.map(milestone => ({
+          id: milestone.id,
+          goalId: milestone.goal_id,
+          milestonePercentage: milestone.milestone_percentage,
+          achievedAt: milestone.achieved_at,
+          amountAtAchievement: milestone.amount_at_achievement,
+          createdAt: milestone.created_at,
+        }));
+
+      const transformGoalContributions = (dbContributions: any[]) => 
+        dbContributions.map(contribution => ({
+          id: contribution.id,
+          goalId: contribution.goal_id,
+          amount: contribution.amount,
+          description: contribution.description,
+          contributionDate: contribution.contribution_date,
+          createdAt: contribution.created_at,
+        }));
+
       // If user has no categories, create default ones
       let categories = categoriesResult.data || [];
       
@@ -242,6 +356,11 @@ export const SupabaseFinanceProvider: React.FC<{ children: React.ReactNode }> = 
         recurringExpenses: transformRecurringExpenses(recurringExpensesResult.data || []),
         oneTimeIncomes: transformOneTimeIncomes(oneTimeIncomesResult.data || []),
         oneTimeExpenses: transformOneTimeExpenses(oneTimeExpensesResult.data || []),
+        categoryBudgets: transformCategoryBudgets(categoryBudgetsResult.data || []),
+        savingsGoals: transformSavingsGoals(savingsGoalsResult.data || []),
+        budgetAlerts: transformBudgetAlerts(budgetAlertsResult.data || []),
+        goalMilestones: transformGoalMilestones(goalMilestonesResult.data || []),
+        goalContributions: transformGoalContributions(goalContributionsResult.data || []),
       });
       
       // Reset retry count on successful load
@@ -1087,6 +1206,342 @@ export const SupabaseFinanceProvider: React.FC<{ children: React.ReactNode }> = 
       throw error;
     }
   };
+
+  // Budget CRUD methods
+  const addCategoryBudget = async (categoryId: string, monthlyLimit: number, alertThreshold: number) => {
+    if (!supabase) throw new Error('Supabase not configured');
+    if (!user) throw new Error('User not authenticated');
+    
+    const { data, error } = await supabase
+      .from('category_budgets')
+      .insert({
+        category_id: categoryId,
+        monthly_limit: monthlyLimit,
+        alert_threshold: alertThreshold,
+        is_active: true,
+        user_id: user.id
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    const newBudget: CategoryBudget = {
+      id: data.id,
+      categoryId: data.category_id,
+      monthlyLimit: data.monthly_limit,
+      alertThreshold: data.alert_threshold,
+      isActive: data.is_active,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+    };
+
+    setData(prev => ({
+      ...prev,
+      categoryBudgets: [newBudget, ...prev.categoryBudgets],
+    }));
+
+    toast.success('Budget created successfully');
+  };
+
+  const updateCategoryBudget = async (budgetId: string, monthlyLimit: number, alertThreshold: number, isActive: boolean) => {
+    if (!supabase) throw new Error('Supabase not configured');
+    
+    const { data, error } = await supabase
+      .from('category_budgets')
+      .update({
+        monthly_limit: monthlyLimit,
+        alert_threshold: alertThreshold,
+        is_active: isActive
+      })
+      .eq('id', budgetId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    const updatedBudget: CategoryBudget = {
+      id: data.id,
+      categoryId: data.category_id,
+      monthlyLimit: data.monthly_limit,
+      alertThreshold: data.alert_threshold,
+      isActive: data.is_active,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+    };
+
+    setData(prev => ({
+      ...prev,
+      categoryBudgets: prev.categoryBudgets.map(budget => 
+        budget.id === budgetId ? updatedBudget : budget
+      ),
+    }));
+
+    toast.success('Budget updated successfully');
+  };
+
+  const deleteCategoryBudget = async (budgetId: string) => {
+    if (!supabase) throw new Error('Supabase not configured');
+    
+    const { error } = await supabase
+      .from('category_budgets')
+      .delete()
+      .eq('id', budgetId);
+
+    if (error) throw error;
+
+    setData(prev => ({
+      ...prev,
+      categoryBudgets: prev.categoryBudgets.filter(budget => budget.id !== budgetId),
+    }));
+
+    toast.success('Budget deleted successfully');
+  };
+
+  // Goals CRUD methods
+  const addSavingsGoal = async (goal: Omit<SavingsGoal, 'id' | 'createdAt' | 'updatedAt'>) => {
+    if (!supabase) throw new Error('Supabase not configured');
+    if (!user) throw new Error('User not authenticated');
+    
+    const { data, error } = await supabase
+      .from('savings_goals')
+      .insert({
+        name: goal.name,
+        description: goal.description,
+        target_amount: goal.targetAmount,
+        current_amount: goal.currentAmount,
+        target_date: goal.targetDate,
+        priority: goal.priority,
+        color: goal.color,
+        icon_url: goal.iconUrl,
+        icon_type: goal.iconType,
+        preset_icon_id: goal.presetIconId,
+        is_active: goal.isActive,
+        is_completed: goal.isCompleted,
+        completed_at: goal.completedAt,
+        user_id: user.id
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    const newGoal: SavingsGoal = {
+      id: data.id,
+      name: data.name,
+      description: data.description,
+      targetAmount: data.target_amount,
+      currentAmount: data.current_amount,
+      targetDate: data.target_date,
+      priority: data.priority,
+      color: data.color,
+      iconUrl: data.icon_url,
+      iconType: data.icon_type,
+      presetIconId: data.preset_icon_id,
+      isActive: data.is_active,
+      isCompleted: data.is_completed,
+      completedAt: data.completed_at,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+    };
+
+    setData(prev => ({
+      ...prev,
+      savingsGoals: [newGoal, ...prev.savingsGoals],
+    }));
+
+    toast.success('Savings goal created successfully');
+  };
+
+  const updateSavingsGoal = async (goalId: string, updates: Partial<SavingsGoal>) => {
+    if (!supabase) throw new Error('Supabase not configured');
+    
+    const dbUpdates: any = {};
+    if (updates.name !== undefined) dbUpdates.name = updates.name;
+    if (updates.description !== undefined) dbUpdates.description = updates.description;
+    if (updates.targetAmount !== undefined) dbUpdates.target_amount = updates.targetAmount;
+    if (updates.currentAmount !== undefined) dbUpdates.current_amount = updates.currentAmount;
+    if (updates.targetDate !== undefined) dbUpdates.target_date = updates.targetDate;
+    if (updates.priority !== undefined) dbUpdates.priority = updates.priority;
+    if (updates.color !== undefined) dbUpdates.color = updates.color;
+    if (updates.iconUrl !== undefined) dbUpdates.icon_url = updates.iconUrl;
+    if (updates.iconType !== undefined) dbUpdates.icon_type = updates.iconType;
+    if (updates.presetIconId !== undefined) dbUpdates.preset_icon_id = updates.presetIconId;
+    if (updates.isActive !== undefined) dbUpdates.is_active = updates.isActive;
+    if (updates.isCompleted !== undefined) dbUpdates.is_completed = updates.isCompleted;
+    if (updates.completedAt !== undefined) dbUpdates.completed_at = updates.completedAt;
+
+    const { data, error } = await supabase
+      .from('savings_goals')
+      .update(dbUpdates)
+      .eq('id', goalId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    const updatedGoal: SavingsGoal = {
+      id: data.id,
+      name: data.name,
+      description: data.description,
+      targetAmount: data.target_amount,
+      currentAmount: data.current_amount,
+      targetDate: data.target_date,
+      priority: data.priority,
+      color: data.color,
+      iconUrl: data.icon_url,
+      iconType: data.icon_type,
+      presetIconId: data.preset_icon_id,
+      isActive: data.is_active,
+      isCompleted: data.is_completed,
+      completedAt: data.completed_at,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+    };
+
+    setData(prev => ({
+      ...prev,
+      savingsGoals: prev.savingsGoals.map(goal => 
+        goal.id === goalId ? updatedGoal : goal
+      ),
+    }));
+
+    toast.success('Savings goal updated successfully');
+  };
+
+  const deleteSavingsGoal = async (goalId: string) => {
+    if (!supabase) throw new Error('Supabase not configured');
+    
+    const { error } = await supabase
+      .from('savings_goals')
+      .delete()
+      .eq('id', goalId);
+
+    if (error) throw error;
+
+    setData(prev => ({
+      ...prev,
+      savingsGoals: prev.savingsGoals.filter(goal => goal.id !== goalId),
+      goalMilestones: prev.goalMilestones.filter(milestone => milestone.goalId !== goalId),
+      goalContributions: prev.goalContributions.filter(contribution => contribution.goalId !== goalId),
+    }));
+
+    toast.success('Savings goal deleted successfully');
+  };
+
+  const addGoalContribution = async (goalId: string, amount: number, description?: string) => {
+    if (!supabase) throw new Error('Supabase not configured');
+    if (!user) throw new Error('User not authenticated');
+    
+    // Add the contribution
+    const { data: contributionData, error: contributionError } = await supabase
+      .from('goal_contributions')
+      .insert({
+        goal_id: goalId,
+        amount: amount,
+        description: description,
+        contribution_date: new Date().toISOString().split('T')[0],
+        user_id: user.id
+      })
+      .select()
+      .single();
+
+    if (contributionError) throw contributionError;
+
+    // Update the goal's current amount
+    const currentGoal = data.savingsGoals.find(g => g.id === goalId);
+    if (!currentGoal) throw new Error('Goal not found');
+
+    const newCurrentAmount = currentGoal.currentAmount + amount;
+    const isCompleted = newCurrentAmount >= currentGoal.targetAmount;
+
+    const { data: goalData, error: goalError } = await supabase
+      .from('savings_goals')
+      .update({
+        current_amount: newCurrentAmount,
+        is_completed: isCompleted,
+        completed_at: isCompleted ? new Date().toISOString() : null
+      })
+      .eq('id', goalId)
+      .select()
+      .single();
+
+    if (goalError) throw goalError;
+
+    // Transform the data
+    const newContribution: GoalContribution = {
+      id: contributionData.id,
+      goalId: contributionData.goal_id,
+      amount: contributionData.amount,
+      description: contributionData.description,
+      contributionDate: contributionData.contribution_date,
+      createdAt: contributionData.created_at,
+    };
+
+    const updatedGoal: SavingsGoal = {
+      id: goalData.id,
+      name: goalData.name,
+      description: goalData.description,
+      targetAmount: goalData.target_amount,
+      currentAmount: goalData.current_amount,
+      targetDate: goalData.target_date,
+      priority: goalData.priority,
+      color: goalData.color,
+      iconUrl: goalData.icon_url,
+      iconType: goalData.icon_type,
+      presetIconId: goalData.preset_icon_id,
+      isActive: goalData.is_active,
+      isCompleted: goalData.is_completed,
+      completedAt: goalData.completed_at,
+      createdAt: goalData.created_at,
+      updatedAt: goalData.updated_at,
+    };
+
+    setData(prev => ({
+      ...prev,
+      goalContributions: [newContribution, ...prev.goalContributions],
+      savingsGoals: prev.savingsGoals.map(goal => 
+        goal.id === goalId ? updatedGoal : goal
+      ),
+    }));
+
+    toast.success(`Added ${formatCurrency(amount)} to ${currentGoal.name}`);
+  };
+
+  const updateBudgetAlert = async (alertType: string, isEnabled: boolean) => {
+    if (!supabase) throw new Error('Supabase not configured');
+    if (!user) throw new Error('User not authenticated');
+    
+    const { data, error } = await supabase
+      .from('budget_alerts')
+      .update({ is_enabled: isEnabled })
+      .eq('alert_type', alertType)
+      .eq('user_id', user.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    const updatedAlert: BudgetAlert = {
+      id: data.id,
+      alertType: data.alert_type,
+      isEnabled: data.is_enabled,
+      thresholdPercentage: data.threshold_percentage,
+      milestonePercentage: data.milestone_percentage,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+    };
+
+    setData(prev => ({
+      ...prev,
+      budgetAlerts: prev.budgetAlerts.map(alert => 
+        alert.alertType === alertType ? updatedAlert : alert
+      ),
+    }));
+
+    toast.success(`Alert ${isEnabled ? 'enabled' : 'disabled'}`);
+  };
+
   return (
     <SupabaseFinanceContext.Provider value={{
       data,
@@ -1111,6 +1566,14 @@ export const SupabaseFinanceProvider: React.FC<{ children: React.ReactNode }> = 
       reorderRecurringExpenses,
       reorderOneTimeIncomes,
       reorderOneTimeExpenses,
+      addCategoryBudget,
+      updateCategoryBudget,
+      deleteCategoryBudget,
+      addSavingsGoal,
+      updateSavingsGoal,
+      deleteSavingsGoal,
+      addGoalContribution,
+      updateBudgetAlert,
     }}>
       {children}
     </SupabaseFinanceContext.Provider>

@@ -22,7 +22,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { TabbedTransactions } from '@/components/tables/TabbedTransactions';
 import { FloatingActionButton, FloatingActionItem } from '@/components/ui/floating-action-button';
 import { PullToRefresh } from '@/components/ui/pull-to-refresh';
-import { SpendingInsights } from '@/components/ui/spending-insights';
 import { SearchFilter } from '@/components/ui/search-filter';
 import { UnifiedIncomeForm } from '@/components/forms/UnifiedIncomeForm';
 import { UnifiedExpenseForm } from '@/components/forms/UnifiedExpenseForm';
@@ -30,12 +29,25 @@ import { DataImporter } from '@/components/utils/DataImporter';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { TrendingUp, TrendingDown, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
-import { generateSpendingInsights } from '@/lib/spending-insights';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth } from 'date-fns';
+import { SimpleBudgetGoalsOverview } from '@/components/budget/SimpleBudgetGoalsOverview';
+import { calculateCategoryBudgetProgress, calculateAllGoalsProgress } from '@/lib/budget-calculations';
 
 export const Dashboard: React.FC = () => {
   const { user, isSupabaseConfigured, loading: authLoading } = useAuth();
-  const { data, loading, error } = useSupabaseFinance();
+  const { 
+    data, 
+    loading, 
+    error,
+    addCategoryBudget,
+    updateCategoryBudget,
+    deleteCategoryBudget,
+    addSavingsGoal,
+    updateSavingsGoal,
+    deleteSavingsGoal,
+    addGoalContribution,
+    addCategory
+  } = useSupabaseFinance();
   
   // (logging removed)
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -164,14 +176,21 @@ export const Dashboard: React.FC = () => {
     monthEnd
   );
 
-  // Generate spending insights
-  const spendingInsights = generateSpendingInsights(
+
+  // Calculate budget and goals progress
+  const budgetProgress = calculateCategoryBudgetProgress(
+    data.categoryBudgets || [],
+    data.categories,
     data.recurringExpenses,
     data.oneTimeExpenses,
-    data.recurringIncomes,
-    data.oneTimeIncomes,
-    data.categories,
-    selectedDate
+    monthStart,
+    monthEnd
+  );
+
+  const goalsProgress = calculateAllGoalsProgress(
+    data.savingsGoals || [],
+    data.goalMilestones || [],
+    data.goalContributions || []
   );
 
   const handleRefresh = async () => {
@@ -412,12 +431,27 @@ export const Dashboard: React.FC = () => {
           monthStart={monthStart}
           monthEnd={monthEnd}
         />
+
+        {/* Budget & Goals Overview */}
+        <SimpleBudgetGoalsOverview
+          budgetProgress={budgetProgress}
+          goalsProgress={goalsProgress}
+          onCreateBudget={addCategoryBudget}
+          onUpdateBudget={updateCategoryBudget}
+          onDeleteBudget={deleteCategoryBudget}
+          onCreateGoal={addSavingsGoal}
+          onUpdateGoal={updateSavingsGoal}
+          onDeleteGoal={deleteSavingsGoal}
+          onAddContribution={addGoalContribution}
+          categories={data.categories}
+          goals={data.savingsGoals || []}
+          categoryBudgets={data.categoryBudgets || []}
+          onCreateCategory={addCategory}
+        />
         
         {/* Charts and Analytics */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mt-6 sm:mt-8">
-          <SpendingInsights insights={spendingInsights} />
-          
-          <Card className="lg:col-span-2 glass-card order-2 lg:order-1">
+        <div className="mt-6 sm:mt-8">
+          <Card className="glass-card">
             <CardHeader>
               <CardTitle className="text-lg sm:text-xl font-semibold text-slate-800 dark:text-slate-200">Expenses by Category</CardTitle>
             </CardHeader>
@@ -430,40 +464,6 @@ export const Dashboard: React.FC = () => {
                 recurringExpenses={data.recurringExpenses}
                 oneTimeExpenses={data.oneTimeExpenses}
               />
-            </CardContent>
-          </Card>
-
-          <Card className="glass-card order-1 lg:order-2">
-            <CardHeader>
-              <CardTitle className="text-lg sm:text-xl font-semibold text-slate-800 dark:text-slate-200">Monthly Summary</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 sm:space-y-4">
-              <div className="space-y-3">
-                <div className="flex justify-between items-center py-1.5 sm:py-2 border-b border-slate-100 dark:border-slate-700">
-                  <span className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400">Recurring Income</span>
-                  <span className="font-semibold text-emerald-600 text-sm sm:text-base">{formatCurrency(recurringIncome)}</span>
-                </div>
-                <div className="flex justify-between items-center py-1.5 sm:py-2 border-b border-slate-100 dark:border-slate-700">
-                  <span className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400">One-time Income</span>
-                  <span className="font-semibold text-emerald-600 text-sm sm:text-base">{formatCurrency(oneTimeIncome)}</span>
-                </div>
-                <div className="flex justify-between items-center py-1.5 sm:py-2 border-b border-slate-100 dark:border-slate-700">
-                  <span className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400">Recurring Expenses</span>
-                  <span className="font-semibold text-rose-600 text-sm sm:text-base">{formatCurrency(recurringExpenses)}</span>
-                </div>
-                <div className="flex justify-between items-center py-1.5 sm:py-2 border-b border-slate-100 dark:border-slate-700">
-                  <span className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400">One-time Expenses</span>
-                  <span className="font-semibold text-rose-600 text-sm sm:text-base">{formatCurrency(oneTimeExpenses)}</span>
-                </div>
-                <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-2.5 sm:p-3 mt-3">
-                  <div className="flex justify-between items-center">
-                    <span className="font-semibold text-slate-800 dark:text-slate-200 text-sm sm:text-base">Net Balance</span>
-                    <span className={`text-base sm:text-lg font-bold ${balance >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                      {formatCurrency(balance)}
-                    </span>
-                  </div>
-                </div>
-              </div>
             </CardContent>
           </Card>
         </div>

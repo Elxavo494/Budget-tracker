@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, Edit, Search, Plus } from 'lucide-react';
+import { Trash2, Edit, Search, Plus, ChevronDown, ChevronUp } from 'lucide-react';
 import { useSupabaseFinance } from '@/contexts/SupabaseFinanceContext';
 import { formatCurrency } from '@/lib/calculations';
 import { format } from 'date-fns';
@@ -50,6 +50,32 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
   const [recurringExpenseSearch, setRecurringExpenseSearch] = useState('');
   const [oneTimeIncomeSearch, setOneTimeIncomeSearch] = useState('');
   const [oneTimeExpenseSearch, setOneTimeExpenseSearch] = useState('');
+  
+  // Show More state - default to showing 5 items per section
+  const [visibleCounts, setVisibleCounts] = useState({
+    oneTimeExpenses: 5,
+    oneTimeIncomes: 5,
+    recurringIncomes: 5,
+    recurringExpenses: 5
+  });
+
+  const INITIAL_VISIBLE_COUNT = 5;
+
+  // Helper functions for show more/less functionality
+  const handleShowMore = (section: keyof typeof visibleCounts, totalCount: number) => {
+    setVisibleCounts(prev => ({
+      ...prev,
+      [section]: totalCount // Show all remaining transactions
+    }));
+  };
+
+  const handleShowLess = (section: keyof typeof visibleCounts) => {
+    setVisibleCounts(prev => ({
+      ...prev,
+      [section]: INITIAL_VISIBLE_COUNT
+    }));
+  };
+
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
     type: 'recurring-income' | 'recurring-expense' | 'one-time-income' | 'one-time-expense';
@@ -81,13 +107,29 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
       );
     };
 
+    // Filter one-time expenses by date range and search
+    const filteredOneTimeExpenses = filterBySearch(data.oneTimeExpenses, oneTimeExpenseSearch)
+      .filter(expense => {
+        const expenseDate = new Date(expense.date);
+        return expenseDate >= monthStart && expenseDate <= monthEnd;
+      })
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    // Filter one-time incomes by date range and search
+    const filteredOneTimeIncomes = filterBySearch(data.oneTimeIncomes, oneTimeIncomeSearch)
+      .filter(income => {
+        const incomeDate = new Date(income.date);
+        return incomeDate >= monthStart && incomeDate <= monthEnd;
+      })
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
     return {
       recurringIncomes: filterBySearch(data.recurringIncomes, recurringIncomeSearch),
       recurringExpenses: filterBySearch(data.recurringExpenses, recurringExpenseSearch),
-      oneTimeIncomes: filterBySearch(data.oneTimeIncomes, oneTimeIncomeSearch),
-      oneTimeExpenses: filterBySearch(data.oneTimeExpenses, oneTimeExpenseSearch),
+      oneTimeIncomes: filteredOneTimeIncomes,
+      oneTimeExpenses: filteredOneTimeExpenses,
     };
-  }, [data, recurringIncomeSearch, recurringExpenseSearch, oneTimeIncomeSearch, oneTimeExpenseSearch]);
+  }, [data, recurringIncomeSearch, recurringExpenseSearch, oneTimeIncomeSearch, oneTimeExpenseSearch, monthStart, monthEnd]);
 
   const handleDragEnd = async (event: any) => {
     const { active, over } = event;
@@ -227,15 +269,12 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
                   </p>
                 </div>
               ) : (
-                <SortableContext items={filteredData.oneTimeExpenses.map(e => e.id)} strategy={verticalListSortingStrategy}>
-                  <div className="space-y-2">
-                    {filteredData.oneTimeExpenses
-                      .filter(expense => {
-                        const expenseDate = new Date(expense.date);
-                        return expenseDate >= monthStart && expenseDate <= monthEnd;
-                      })
-                      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                      .map((expense) => (
+                <>
+                  <SortableContext items={filteredData.oneTimeExpenses.slice(0, visibleCounts.oneTimeExpenses).map(e => e.id)} strategy={verticalListSortingStrategy}>
+                    <div className="space-y-2">
+                      {filteredData.oneTimeExpenses
+                        .slice(0, visibleCounts.oneTimeExpenses)
+                        .map((expense) => (
                         <DraggableItem key={expense.id} id={expense.id}>
                           <div className="flex items-center justify-between p-2.5 sm:p-3 bg-rose-50/30 dark:bg-rose-900/10 rounded-lg border border-rose-100 dark:border-rose-800 hover:bg-rose-50/50 dark:hover:bg-rose-900/20 transition-colors duration-200 w-full">
                             <div className="flex-1">
@@ -275,8 +314,36 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
                           </div>
                         </DraggableItem>
                       ))}
-                  </div>
-                </SortableContext>
+                    </div>
+                  </SortableContext>
+                  
+                  {/* Show More/Less Button for One-time Expenses */}
+                  {filteredData.oneTimeExpenses.length > INITIAL_VISIBLE_COUNT && (
+                    <div className="flex justify-center pt-3">
+                      {visibleCounts.oneTimeExpenses < filteredData.oneTimeExpenses.length ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleShowMore('oneTimeExpenses', filteredData.oneTimeExpenses.length)}
+                          className="text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
+                        >
+                          <ChevronDown className="h-4 w-4 mr-1" />
+                          Show All ({filteredData.oneTimeExpenses.length - visibleCounts.oneTimeExpenses} more)
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleShowLess('oneTimeExpenses')}
+                          className="text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
+                        >
+                          <ChevronUp className="h-4 w-4 mr-1" />
+                          Show Less
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </>
               )}
             </CardContent>
           </Card>
@@ -321,14 +388,11 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
                   </p>
                 </div>
               ) : (
-                <div className="space-y-2">
-                  {filteredData.oneTimeIncomes
-                    .filter(income => {
-                      const incomeDate = new Date(income.date);
-                      return incomeDate >= monthStart && incomeDate <= monthEnd;
-                    })
-                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                    .map((income) => (
+                <>
+                  <div className="space-y-2">
+                    {filteredData.oneTimeIncomes
+                      .slice(0, visibleCounts.oneTimeIncomes)
+                      .map((income) => (
                       <div key={income.id} className="flex items-center justify-between p-2.5 sm:p-3 bg-emerald-50/30 dark:bg-emerald-900/10 rounded-lg border border-emerald-100 dark:border-emerald-800 hover:bg-emerald-50/50 dark:hover:bg-emerald-900/20 transition-colors duration-200">
                         <div className="flex-1">
                           <div className="font-semibold text-slate-800 dark:text-slate-200 text-sm sm:text-base truncate pr-2">{income.name}</div>
@@ -353,7 +417,35 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
                         </div>
                       </div>
                     ))}
-                </div>
+                  </div>
+                  
+                  {/* Show More/Less Button for One-time Incomes */}
+                  {filteredData.oneTimeIncomes.length > INITIAL_VISIBLE_COUNT && (
+                    <div className="flex justify-center pt-3">
+                      {visibleCounts.oneTimeIncomes < filteredData.oneTimeIncomes.length ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleShowMore('oneTimeIncomes', filteredData.oneTimeIncomes.length)}
+                          className="text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
+                        >
+                          <ChevronDown className="h-4 w-4 mr-1" />
+                          Show All ({filteredData.oneTimeIncomes.length - visibleCounts.oneTimeIncomes} more)
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleShowLess('oneTimeIncomes')}
+                          className="text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
+                        >
+                          <ChevronUp className="h-4 w-4 mr-1" />
+                          Show Less
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </>
               )}
             </CardContent>
           </Card>
@@ -409,9 +501,12 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
                   </p>
                 </div>
               ) : (
-                <SortableContext items={filteredData.recurringIncomes.map(i => i.id)} strategy={verticalListSortingStrategy}>
-                  <div className="space-y-2">
-                    {filteredData.recurringIncomes.map((income) => (
+                <>
+                  <SortableContext items={filteredData.recurringIncomes.slice(0, visibleCounts.recurringIncomes).map(i => i.id)} strategy={verticalListSortingStrategy}>
+                    <div className="space-y-2">
+                      {filteredData.recurringIncomes
+                        .slice(0, visibleCounts.recurringIncomes)
+                        .map((income) => (
                       <DraggableItem key={income.id} id={income.id}>
                         <div className="flex items-center justify-between p-2.5 sm:p-3 bg-emerald-50/50 dark:bg-emerald-900/20 rounded-lg border border-emerald-100 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition-colors duration-200 w-full">
                       <div className="flex-1">
@@ -440,8 +535,36 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
                         </div>
                       </DraggableItem>
                     ))}
-                  </div>
-                </SortableContext>
+                    </div>
+                  </SortableContext>
+                  
+                  {/* Show More/Less Button for Recurring Incomes */}
+                  {filteredData.recurringIncomes.length > INITIAL_VISIBLE_COUNT && (
+                    <div className="flex justify-center pt-3">
+                      {visibleCounts.recurringIncomes < filteredData.recurringIncomes.length ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleShowMore('recurringIncomes', filteredData.recurringIncomes.length)}
+                          className="text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
+                        >
+                          <ChevronDown className="h-4 w-4 mr-1" />
+                          Show All ({filteredData.recurringIncomes.length - visibleCounts.recurringIncomes} more)
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleShowLess('recurringIncomes')}
+                          className="text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
+                        >
+                          <ChevronUp className="h-4 w-4 mr-1" />
+                          Show Less
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </>
               )}
             </CardContent>
           </Card>
@@ -487,9 +610,12 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
                   </p>
                 </div>
               ) : (
-                <SortableContext items={filteredData.recurringExpenses.map(e => e.id)} strategy={verticalListSortingStrategy}>
-                  <div className="space-y-2">
-                    {filteredData.recurringExpenses.map((expense) => (
+                <>
+                  <SortableContext items={filteredData.recurringExpenses.slice(0, visibleCounts.recurringExpenses).map(e => e.id)} strategy={verticalListSortingStrategy}>
+                    <div className="space-y-2">
+                      {filteredData.recurringExpenses
+                        .slice(0, visibleCounts.recurringExpenses)
+                        .map((expense) => (
                       <DraggableItem key={expense.id} id={expense.id}>
                         <div className="flex items-center justify-between p-2.5 sm:p-3 bg-rose-50/50 dark:bg-rose-900/20 rounded-lg border border-rose-100 dark:border-rose-800 hover:bg-rose-50 dark:hover:bg-rose-900/30 transition-colors duration-200 w-full">
                       <div className="flex items-center gap-3 flex-1">
@@ -542,8 +668,36 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
                           </div>
                         </DraggableItem>
                       ))}
-                  </div>
-                </SortableContext>
+                    </div>
+                  </SortableContext>
+                  
+                  {/* Show More/Less Button for Recurring Expenses */}
+                  {filteredData.recurringExpenses.length > INITIAL_VISIBLE_COUNT && (
+                    <div className="flex justify-center pt-3">
+                      {visibleCounts.recurringExpenses < filteredData.recurringExpenses.length ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleShowMore('recurringExpenses', filteredData.recurringExpenses.length)}
+                          className="text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
+                        >
+                          <ChevronDown className="h-4 w-4 mr-1" />
+                          Show All ({filteredData.recurringExpenses.length - visibleCounts.recurringExpenses} more)
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleShowLess('recurringExpenses')}
+                          className="text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
+                        >
+                          <ChevronUp className="h-4 w-4 mr-1" />
+                          Show Less
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </>
               )}
             </CardContent>
           </Card>
