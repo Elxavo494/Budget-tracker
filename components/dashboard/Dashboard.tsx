@@ -29,13 +29,16 @@ import { DataImporter } from '@/components/utils/DataImporter';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { TrendingUp, TrendingDown, ChevronLeft, ChevronRight, ChevronDown, PieChart } from 'lucide-react';
-import { format, addMonths, subMonths, startOfMonth, endOfMonth } from 'date-fns';
+import { format, addMonths, subMonths, startOfMonth, endOfMonth, differenceInDays } from 'date-fns';
 import { DateRangePicker, DateRange } from '@/components/ui/date-range-picker';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { SimpleBudgetGoalsOverview } from '@/components/budget/SimpleBudgetGoalsOverview';
 import { calculateCategoryBudgetProgress, calculateAllGoalsProgress } from '@/lib/budget-calculations';
+import { useCurrency } from '@/hooks/use-currency';
 
 export const Dashboard: React.FC = () => {
   const { user, isSupabaseConfigured, loading: authLoading } = useAuth();
+  const { formatCurrency, currency: userCurrency } = useCurrency();
   const { 
     data, 
     loading, 
@@ -173,6 +176,18 @@ export const Dashboard: React.FC = () => {
   // Calculate weekly spending amount
   const weeksRemaining = calculateWeeksRemainingInMonth(selectedDate);
   const leftToSpendPerWeek = weeksRemaining > 0 ? leftToSpend / weeksRemaining : 0;
+  
+  // Calculate days remaining in the month
+  const today = new Date();
+  const daysRemaining = isCurrentMonth ? Math.max(0, differenceInDays(monthEnd, today)) : differenceInDays(monthEnd, monthStart) + 1;
+  
+  // Calculate daily spending amount
+  const leftToSpendPerDay = daysRemaining > 0 ? leftToSpend / daysRemaining : 0;
+  
+  // Calculate time-based progress (how much of the month has passed)
+  const totalDaysInMonth = differenceInDays(monthEnd, monthStart) + 1;
+  const daysElapsed = isCurrentMonth ? totalDaysInMonth - daysRemaining : totalDaysInMonth;
+  const timeProgress = isCurrentMonth ? (daysElapsed / totalDaysInMonth) * 100 : 100;
 
   const expensesByCategory = calculateExpensesByCategory(
     data.recurringExpenses,
@@ -224,7 +239,7 @@ export const Dashboard: React.FC = () => {
                 {formatCurrency(leftToSpend)}
               </div>
               <p className="absolute -top-4 -right-0 text-gray-100/70 dark:text-gray-100/70 text-xs font-normal whitespace-nowrap">
-                {formatCurrency(leftToSpendPerWeek)}/ remaining weeks
+                {formatCurrency(leftToSpendPerDay)}/ remaining day
               </p>
             </div>
             <p className="text-gray-100 dark:text-gray-100 text-base font-medium">
@@ -390,15 +405,39 @@ export const Dashboard: React.FC = () => {
                 </div>
                 
                 {/* Progress Bar */}
-                <div className="w-full bg-muted rounded-full h-3 overflow-hidden">
+                <div className="w-full bg-muted rounded-full h-3 overflow-hidden relative">
                   <div 
                     className="h-full rounded-full gradient-primary transition-all duration-500 ease-out"
                     style={{ width: `${Math.min(spendingProgress, 100)}%` }}
                   />
+                  {/* Time-based indicator - shows where spending should be based on days elapsed */}
+                  {isCurrentMonth && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div 
+                            className="absolute top-0 bottom-0 w-[1px] bg-slate-400 dark:bg-white transition-all duration-500 ease-out cursor-help touch-manipulation dark:shadow-[0_0_4px_rgba(255,255,255,0.6)] shadow-[0_0_3px_rgba(0,0,0,0.3)]"
+                            style={{ left: `${Math.min(timeProgress, 100)}%` }}
+                            onClick={(e) => {
+                              // For mobile devices, prevent event bubbling and let tooltip handle the click
+                              e.stopPropagation();
+                            }}
+                          />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="font-medium">{timeProgress.toFixed(1)}% of month elapsed</p>
+                          <p className="text-xs text-muted-foreground">
+                            {daysElapsed} of {totalDaysInMonth} days passed
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
                 </div>
                 
                 <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400 mt-2">
                   <span>{(spendingProgress).toFixed(1)}% spent</span>
+                  <span>{daysRemaining} {daysRemaining === 1 ? 'day' : 'days'} {isCurrentMonth ? 'left' : 'total'}</span>
                   <span>{(100 - spendingProgress).toFixed(1)}% remaining</span>
                 </div>
               </CardContent>

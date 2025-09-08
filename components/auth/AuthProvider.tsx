@@ -8,6 +8,7 @@ interface UserProfile {
   id: string;
   full_name: string | null;
   avatar_url: string | null;
+  currency: string | null;
   updated_at: string;
 }
 
@@ -21,6 +22,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  getUserCurrency: () => string;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -65,6 +67,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             id: userId,
             full_name: null,
             avatar_url: null,
+            currency: null,
             updated_at: new Date().toISOString(),
           };
           setProfile(defaultProfile);
@@ -80,6 +83,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           id: userId,
           full_name: null,
           avatar_url: null,
+          currency: null,
           updated_at: new Date().toISOString(),
         };
         setProfile(newProfile);
@@ -90,6 +94,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         id: userId,
         full_name: null,
         avatar_url: null,
+        currency: null,
         updated_at: new Date().toISOString(),
       };
       setProfile(defaultProfile);
@@ -100,6 +105,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (user) {
       await loadProfile(user.id);
     }
+  };
+
+  const getUserCurrency = (): string => {
+    return profile?.currency || 'USD';
   };
 
   const clearStaleAuth = async () => {
@@ -325,6 +334,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       signIn,
       signOut,
       refreshProfile,
+      getUserCurrency,
     }}>
       {children}
     </AuthContext.Provider>

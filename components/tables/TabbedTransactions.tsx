@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Edit, Trash2, Plus, Search, ArrowUpDown, ChevronDown, ChevronUp, Filter, Receipt } from 'lucide-react';
 import { useSupabaseFinance } from '@/contexts/SupabaseFinanceContext';
-import { formatCurrency } from '@/lib/calculations';
+import { useCurrency } from '@/hooks/use-currency';
 import { format } from 'date-fns';
 import { UnifiedIncomeForm } from '@/components/forms/UnifiedIncomeForm';
 import { UnifiedExpenseForm } from '@/components/forms/UnifiedExpenseForm';
@@ -49,6 +49,7 @@ export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
   monthEnd,
 }) => {
   const { data, deleteRecurringIncome, deleteRecurringExpense, deleteOneTimeIncome, deleteOneTimeExpense } = useSupabaseFinance();
+  const { formatCurrency } = useCurrency();
   const [deleteItem, setDeleteItem] = useState<{ type: string; id: string; name: string } | null>(null);
   const [activeTab, setActiveTab] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');

@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
-import { formatCurrency } from '@/lib/calculations';
+import { useCurrency } from '@/hooks/use-currency';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination, Navigation } from 'swiper/modules';
 
@@ -22,6 +22,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({
   totalExpenses,
   balance,
 }) => {
+  const { formatCurrency } = useCurrency();
   const cards = [
     {
       title: "Total Income",

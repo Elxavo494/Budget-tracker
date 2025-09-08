@@ -246,9 +246,23 @@ export const calculateDailyExpenses = (
   return Math.round((dailyRecurring + dailyOneTime) * 100) / 100;
 };
 
-export const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat('en-US', {
+export const formatCurrency = (amount: number, currency: string = 'USD'): string => {
+  // Map currency codes to locale for better formatting
+  const localeMap: Record<string, string> = {
+    'USD': 'en-US',
+    'EUR': 'en-DE',
+    'GBP': 'en-GB',
+    'JPY': 'ja-JP',
+    'CAD': 'en-CA',
+    'AUD': 'en-AU',
+    'CHF': 'de-CH',
+    'CNY': 'zh-CN',
+  };
+
+  const locale = localeMap[currency] || 'en-US';
+
+  return new Intl.NumberFormat(locale, {
     style: 'currency',
-    currency: 'EUR',
+    currency: currency,
   }).format(amount);
 };

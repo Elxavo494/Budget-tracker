@@ -165,7 +165,12 @@ export const SimpleBudgetGoalsOverview: React.FC<SimpleBudgetGoalsOverviewProps>
                   <TrendingUp className="h-5 w-5" />
                   Budget Overview
                 </CardTitle>
-                <Button variant="outline" size="sm" onClick={() => setShowBudgetManager(true)}>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700"
+                  onClick={() => setShowBudgetManager(true)}
+                >
                   Manage
                 </Button>
               </div>
@@ -296,7 +301,12 @@ export const SimpleBudgetGoalsOverview: React.FC<SimpleBudgetGoalsOverviewProps>
                   <Target className="h-5 w-5" />
                   Goals Overview
                 </CardTitle>
-                <Button variant="outline" size="sm" onClick={() => setShowGoalsManager(true)}>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700"
+                  onClick={() => setShowGoalsManager(true)}
+                >
                   Manage
                 </Button>
               </div>
