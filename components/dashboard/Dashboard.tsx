@@ -28,8 +28,9 @@ import { UnifiedExpenseForm } from '@/components/forms/UnifiedExpenseForm';
 import { DataImporter } from '@/components/utils/DataImporter';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { TrendingUp, TrendingDown, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
+import { TrendingUp, TrendingDown, ChevronLeft, ChevronRight, ChevronDown, PieChart } from 'lucide-react';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth } from 'date-fns';
+import { DateRangePicker, DateRange } from '@/components/ui/date-range-picker';
 import { SimpleBudgetGoalsOverview } from '@/components/budget/SimpleBudgetGoalsOverview';
 import { calculateCategoryBudgetProgress, calculateAllGoalsProgress } from '@/lib/budget-calculations';
 
@@ -55,6 +56,11 @@ export const Dashboard: React.FC = () => {
   const [filterCategory, setFilterCategory] = useState('');
   const [filterType, setFilterType] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [dateRange, setDateRange] = useState<DateRange>({
+    from: startOfMonth(new Date()),
+    to: endOfMonth(new Date()),
+    label: ''
+  });
   
   // Show auth modal if not authenticated
   if (!user) {
@@ -453,7 +459,17 @@ export const Dashboard: React.FC = () => {
         <div className="mt-6 sm:mt-8">
           <Card className="glass-card">
             <CardHeader>
-              <CardTitle className="text-lg sm:text-xl font-semibold text-slate-800 dark:text-slate-200">Expenses by Category</CardTitle>
+              <div className="flex items-center justify-between gap-4">
+                <CardTitle className="text-lg sm:text-xl font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                  <PieChart className="h-5 w-5" />
+                  Expenses by Category
+                </CardTitle>
+                <DateRangePicker
+                  selectedRange={dateRange}
+                  onRangeChange={setDateRange}
+                  className="text-xs"
+                />
+              </div>
             </CardHeader>
             <CardContent>
               <ExpenseChart 
@@ -463,6 +479,9 @@ export const Dashboard: React.FC = () => {
                 selectedDate={selectedDate}
                 recurringExpenses={data.recurringExpenses}
                 oneTimeExpenses={data.oneTimeExpenses}
+                categories={data.categories}
+                categoryBudgets={data.categoryBudgets || []}
+                dateRange={dateRange}
               />
             </CardContent>
           </Card>

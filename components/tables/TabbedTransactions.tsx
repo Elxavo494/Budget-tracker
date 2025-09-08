@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Edit, Trash2, Plus, Search, ArrowUpDown, ChevronDown, ChevronUp, Filter } from 'lucide-react';
+import { Edit, Trash2, Plus, Search, ArrowUpDown, ChevronDown, ChevronUp, Filter, Receipt } from 'lucide-react';
 import { useSupabaseFinance } from '@/contexts/SupabaseFinanceContext';
 import { formatCurrency } from '@/lib/calculations';
 import { format } from 'date-fns';
@@ -583,7 +583,10 @@ export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
       <Card className="shadow-sm hover:shadow-md transition-shadow duration-200 glass-card">
         <CardContent className="p-4 sm:p-6">
           <div className="flex items-center justify-between mb-4 sm:mb-6">
-            <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100">Transactions</h2>
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+              <Receipt className="h-5 w-5" />
+              Transactions
+            </h2>
             <DynamicAddButton />
           </div>
 

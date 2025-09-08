@@ -1,13 +1,14 @@
 'use client';
 
-import React, { useState } from 'react';
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell } from 'recharts';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import React, { useState, useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
-import { formatCurrency, calculateWeeklyExpenses } from '@/lib/calculations';
-import { RecurringExpense, OneTimeExpense } from '@/types';
-import { Calendar, PieChart, BarChart3 } from 'lucide-react';
-import { format, startOfWeek, endOfWeek, eachDayOfInterval, addDays, isSameDay } from 'date-fns';
+import { formatCurrency } from '@/lib/calculations';
+import { calculateEnhancedExpenseAnalytics, getTransactionsByCategory, CategoryHistoricalData } from '@/lib/enhanced-expense-analytics';
+import { RecurringExpense, OneTimeExpense, Category, CategoryBudget } from '@/types';
+import { Calendar, TrendingUp, TrendingDown, Minus, ArrowUp, ArrowDown, Target } from 'lucide-react';
+import { format, startOfMonth, endOfMonth } from 'date-fns';
+import { DateRange } from '@/components/ui/date-range-picker';
+import { CategoryTransactionsModal } from './CategoryTransactionsModal';
 
 interface ExpenseChartProps {
   data: Array<{
@@ -20,6 +21,9 @@ interface ExpenseChartProps {
   selectedDate?: Date;
   recurringExpenses?: RecurringExpense[];
   oneTimeExpenses?: OneTimeExpense[];
+  categories?: Category[];
+  categoryBudgets?: CategoryBudget[];
+  dateRange?: DateRange;
 }
 
 export const ExpenseChart: React.FC<ExpenseChartProps> = ({ 
@@ -28,9 +32,29 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
   monthEnd = new Date(),
   selectedDate = new Date(),
   recurringExpenses = [],
-  oneTimeExpenses = []
+  oneTimeExpenses = [],
+  categories = [],
+  categoryBudgets = [],
+  dateRange = {
+    from: new Date(),
+    to: new Date(),
+    label: 'This Month'
+  }
 }) => {
-  const [viewMode, setViewMode] = useState('categories');
+  const [selectedCategory, setSelectedCategory] = useState<CategoryHistoricalData | null>(null);
+  const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
+
+  // Calculate enhanced analytics
+  const enhancedAnalytics = useMemo(() => {
+    if (categories.length === 0) return null;
+    return calculateEnhancedExpenseAnalytics(
+      recurringExpenses,
+      oneTimeExpenses,
+      categories,
+      categoryBudgets,
+      new Date(dateRange.from)
+    );
+  }, [recurringExpenses, oneTimeExpenses, categories, categoryBudgets, dateRange]);
 
   if (data.length === 0) {
     return (
@@ -42,207 +66,215 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
     );
   }
 
-  // Generate weekly data for the current month
-  const weeklyData = calculateWeeklyExpenses(
-    recurringExpenses,
-    oneTimeExpenses,
-    monthStart,
-    monthEnd
-  );
 
   const totalExpenses = data.reduce((sum, item) => sum + item.value, 0);
   const maxCategoryValue = Math.max(...data.map(d => d.value));
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0];
-      return (
-        <div className="bg-white dark:bg-slate-800 p-3 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg">
-          <p className="font-medium text-slate-800 dark:text-slate-200 mb-1 text-sm">
-            {viewMode === 'categories' ? data.payload.name : `Week of ${label}`}
-          </p>
-          <p className="text-rose-600 dark:text-rose-400 font-semibold">
-            {formatCurrency(data.value)}
-          </p>
-          {viewMode === 'categories' && (
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              {((data.value / totalExpenses) * 100).toFixed(1)}% of total
-            </p>
-          )}
-        </div>
-      );
-    }
-    return null;
+  // Handle category drill-down
+  const handleCategoryClick = (categoryData: CategoryHistoricalData) => {
+    setSelectedCategory(categoryData);
+    setIsTransactionModalOpen(true);
   };
 
-  const CategoryBarChart = () => (
-    <div className="space-y-4">
-      {/* Header - compact */}
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xl font-semibold text-slate-900 dark:text-slate-100">
-            {formatCurrency(totalExpenses)}
-          </p>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Total expenses this month
-          </p>
-        </div>
-        <Badge variant="outline" className="text-xs">
-          {data.length} categories
-        </Badge>
-      </div>
+  const getTransactionData = () => {
+    if (!selectedCategory) return { recurring: [], oneTime: [], total: 0 };
+    return getTransactionsByCategory(
+      recurringExpenses,
+      oneTimeExpenses,
+      selectedCategory.categoryId,
+      startOfMonth(dateRange.from),
+      endOfMonth(dateRange.to)
+    );
+  };
 
-      {/* Category list - compact design */}
-      <div className="space-y-2">
-        {data
-          .sort((a, b) => b.value - a.value)
-          .map((category, index) => {
-            const percentage = (category.value / totalExpenses) * 100;
-            const barWidth = (category.value / maxCategoryValue) * 100;
-            
-            return (
-              <div 
-                key={category.name}
-                className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors focus:outline-none pl-0"
-              >
-                <div className="flex items-center gap-3 flex-1">
-                 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-medium text-sm text-slate-800 dark:text-slate-200 truncate">
-                        {category.name}
-                      </span>
-                      <span className="text-xs text-slate-500 dark:text-slate-400">
-                        {percentage.toFixed(1)}%
-                      </span>
-                    </div>
-                    {/* Progress bar */}
-                    <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-1.5">
-                      <div 
-                        className="h-full rounded-full transition-all duration-300"
-                        style={{ 
-                          width: `${barWidth}%`,
-                          backgroundColor: category.color
-                        }}
-                      />
+
+  const getTrendIcon = (trend: 'up' | 'down' | 'stable') => {
+    switch (trend) {
+      case 'up': return <TrendingUp className="h-3 w-3 text-red-500" />;
+      case 'down': return <TrendingDown className="h-3 w-3 text-green-500" />;
+      default: return <Minus className="h-3 w-3 text-slate-400" />;
+    }
+  };
+
+  const getRankingIcon = (change: number) => {
+    if (change > 0) return <ArrowUp className="h-3 w-3 text-green-500" />;
+    if (change < 0) return <ArrowDown className="h-3 w-3 text-red-500" />;
+    return <Minus className="h-3 w-3 text-slate-400" />;
+  };
+
+  const CategoryBarChart = () => {
+    const displayData = enhancedAnalytics?.categories || data.map(d => ({
+      name: d.name,
+      value: d.value,
+      color: d.color,
+      categoryId: '',
+      change: { amount: 0, percentage: 0, trend: 'stable' as const },
+      ranking: { current: 0, previous: 0, change: 0 },
+      averages: { threeMonth: 0, sixMonth: 0, comparison: 'normal' as const },
+      seasonal: { isTypical: true, seasonalAverage: 0, deviation: 0 },
+      transactions: { count: 0, averageAmount: 0, largestTransaction: 0 },
+      budget: undefined
+    }));
+
+    return (
+      <div className="space-y-4">
+        {/* Header */}
+        <div className="mb-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <p className="text-xl font-semibold text-slate-900 dark:text-slate-100">
+                {formatCurrency(totalExpenses)}
+              </p>
+              {enhancedAnalytics && (
+                <div className="flex items-center gap-1">
+                  {getTrendIcon(enhancedAnalytics.summary.overallChange.trend)}
+                  <span className={`text-xs font-medium ${
+                    enhancedAnalytics.summary.overallChange.trend === 'up' ? 'text-red-600' :
+                    enhancedAnalytics.summary.overallChange.trend === 'down' ? 'text-green-600' :
+                    'text-slate-500'
+                  }`}>
+                    {enhancedAnalytics.summary.overallChange.percentage > 0 ? '+' : ''}
+                    {enhancedAnalytics.summary.overallChange.percentage.toFixed(1)}%
+                  </span>
+                </div>
+              )}
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Total expenses • {data.length} categories
+            </p>
+            {enhancedAnalytics?.summary.budgetSummary && (
+              <div className="flex items-center gap-2 mt-1">
+                <Target className="h-3 w-3 text-slate-400" />
+                <span className="text-xs text-slate-500">
+                  {formatCurrency(enhancedAnalytics.summary.budgetSummary.totalSpent)} of {formatCurrency(enhancedAnalytics.summary.budgetSummary.totalBudget)} budget
+                </span>
+                {enhancedAnalytics.summary.budgetSummary.categoriesOverBudget > 0 && (
+                  <Badge variant="destructive" className="text-xs">
+                    {enhancedAnalytics.summary.budgetSummary.categoriesOverBudget} over budget
+                  </Badge>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Enhanced category list */}
+        <div className="space-y-2">
+          {displayData
+            .sort((a, b) => b.value - a.value)
+            .map((category, index) => {
+              const percentage = (category.value / totalExpenses) * 100;
+              const barWidth = (category.value / maxCategoryValue) * 100;
+              
+              return (
+                <div 
+                  key={category.name}
+                  className="group flex items-center justify-between py-3 px-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 transition-colors cursor-pointer border border-transparent border-slate-200 dark:border-slate-700"
+                  onClick={() => enhancedAnalytics && handleCategoryClick(category)}
+                >
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className="flex-1 min-w-0">
+                      {/* Category name and indicators */}
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="font-medium text-sm text-slate-800 dark:text-slate-200 truncate">
+                          {category.name}
+                        </span>
+                        <span className="text-xs text-slate-500 dark:text-slate-400">
+                          {percentage.toFixed(1)}%
+                        </span>
+                        
+                        {/* Historical indicators */}
+                        {enhancedAnalytics && (
+                          <div className="flex items-center gap-1">
+                            {getTrendIcon(category.change.trend)}
+                            {category.ranking.change !== 0 && getRankingIcon(category.ranking.change)}
+                            {category.averages.comparison === 'above' && (
+                              <Badge variant="outline" className="text-xs">Above avg</Badge>
+                            )}
+                            {category.averages.comparison === 'below' && (
+                              <Badge variant="secondary" className="text-xs">Below avg</Badge>
+                            )}
+                            {!category.seasonal.isTypical && (
+                              <Badge variant="outline" className="text-xs">Unusual</Badge>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Progress bar with budget overlay */}
+                      <div className="relative w-full bg-slate-100 dark:bg-slate-700 rounded-full h-2 mb-1">
+                        <div 
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{ 
+                            width: `${barWidth}%`,
+                            backgroundColor: category.color
+                          }}
+                        />
+                        {/* Budget limit indicator */}
+                        {category.budget && (
+                          <div
+                            className="absolute top-0 bottom-0 w-0.5 bg-slate-400 dark:bg-slate-300"
+                            style={{
+                              left: `${Math.min((category.budget.limit / maxCategoryValue) * 100, 100)}%`
+                            }}
+                          />
+                        )}
+                      </div>
+
+                      {/* Additional info */}
+                      <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+                        {category.transactions.count > 0 && (
+                          <span>{category.transactions.count} transactions</span>
+                        )}
+                        {category.budget && (
+                          <span className={category.budget.isOverBudget ? 'text-red-600' : 'text-slate-500'}>
+                            {formatCurrency(category.budget.remaining)} {category.budget.isOverBudget ? 'over' : 'left'}
+                          </span>
+                        )}
+                        {category.change.amount !== 0 && (
+                          <span className={category.change.trend === 'up' ? 'text-red-600' : 'text-green-600'}>
+                            {category.change.amount > 0 ? '+' : ''}{formatCurrency(category.change.amount)} vs last month
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
+
+                  <div className="text-right ml-3">
+                    <div className="font-semibold text-sm text-slate-900 dark:text-slate-100">
+                      {formatCurrency(category.value)}
+                    </div>
+                    {category.budget && (
+                      <div className="text-xs text-slate-500 dark:text-slate-400">
+                        of {formatCurrency(category.budget.limit)}
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <span className="font-semibold text-sm text-slate-900 dark:text-slate-100 ml-3">
-                  {formatCurrency(category.value)}
-                </span>
-              </div>
-            );
-          })
-        }
-      </div>
-    </div>
-  );
-
-  const WeeklyBarChart = () => (
-    <div className="space-y-4">
-      {/* Header - compact */}
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xl font-semibold text-slate-900 dark:text-slate-100">
-            Weekly Breakdown
-          </p>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            {format(monthStart, 'MMMM yyyy')} spending pattern
-          </p>
-        </div>
-        <Badge variant="outline" className="text-xs">
-          <Calendar className="h-3 w-3 mr-1" />
-          {weeklyData.length} weeks
-        </Badge>
-      </div>
-
-      {/* Weekly chart */}
-      <div className="h-48">
-        {React.createElement(ResponsiveContainer as any, { width: "100%", height: "100%" }, 
-          React.createElement(BarChart as any, { 
-            data: weeklyData, 
-            margin: { top: 10, right: 10, left: 10, bottom: 5 } 
-          }, [
-            React.createElement(XAxis as any, { 
-              key: 'xaxis',
-              dataKey: "week", 
-              axisLine: false,
-              tickLine: false,
-              tick: { fontSize: 11, fill: 'currentColor' },
-              className: "text-slate-600 dark:text-slate-400"
-            }),
-            React.createElement(YAxis as any, { 
-              key: 'yaxis',
-              axisLine: false,
-              tickLine: false,
-              tick: { fontSize: 11, fill: 'currentColor' },
-              className: "text-slate-600 dark:text-slate-400",
-              tickFormatter: (value: number) => `€${value}`
-            }),
-            React.createElement(Tooltip as any, { key: 'tooltip', content: CustomTooltip }),
-            React.createElement(Bar as any, { 
-              key: 'bar',
-              dataKey: "value", 
-              radius: [4, 4, 0, 0],
-              className: "fill-primary"
-            })
-          ])
-        )}
-      </div>
-
-      {/* Daily breakdown for current week - compact */}
-      <div>
-        <p className="text-sm font-medium text-slate-800 dark:text-slate-200 mb-3">
-          This Week&apos;s Daily Spending
-        </p>
-        <div className="grid grid-cols-7 gap-2">
-          {weeklyData[weeklyData.length - 1]?.days.map((day, index) => (
-            <div 
-              key={index}
-              className={`p-2 rounded-lg text-center transition-all focus:outline-none ${
-                day.isToday 
-                  ? 'bg-primary text-primary-foreground' 
-                  : 'bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700'
-              }`}
-            >
-              <p className={`text-xs font-medium mb-1 ${
-                day.isToday ? 'text-primary-foreground/90' : 'text-slate-500 dark:text-slate-400'
-              }`}>
-                {day.day}
-              </p>
-              <p className={`text-sm font-semibold ${
-                day.isToday ? 'text-primary-foreground' : 'text-slate-900 dark:text-slate-100'
-              }`}>
-                €{day.value.toFixed(0)}
-              </p>
-            </div>
-          ))}
+              );
+            })}
         </div>
       </div>
-    </div>
-  );
+    );
+  };
+
 
   return (
-    <Tabs value={viewMode} onValueChange={setViewMode} className="w-full">
-      <TabsList className="grid w-full grid-cols-2 mb-4 h-10">
-        <TabsTrigger value="categories" className="text-xs sm:text-sm focus:outline-none focus:ring-0">
-          <PieChart className="h-3 w-3 mr-1" />
-          Categories
-        </TabsTrigger>
-        <TabsTrigger value="weekly" className="text-xs sm:text-sm focus:outline-none focus:ring-0">
-          <BarChart3 className="h-3 w-3 mr-1" />
-          Weekly
-        </TabsTrigger>
-      </TabsList>
+    <>
+      <CategoryBarChart />
 
-      <TabsContent value="categories" className="mt-0">
-        <CategoryBarChart />
-      </TabsContent>
-
-      <TabsContent value="weekly" className="mt-0">
-        <WeeklyBarChart />
-      </TabsContent>
-    </Tabs>
+      {/* Transaction Details Modal */}
+      {selectedCategory && (
+        <CategoryTransactionsModal
+          isOpen={isTransactionModalOpen}
+          onClose={() => setIsTransactionModalOpen(false)}
+          categoryName={selectedCategory.name}
+          categoryColor={selectedCategory.color}
+          transactions={getTransactionData()}
+          monthStart={startOfMonth(dateRange.from)}
+          monthEnd={endOfMonth(dateRange.to)}
+        />
+      )}
+    </>
   );
 };
