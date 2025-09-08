@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CategoryBudgetProgress, GoalProgress, BudgetAlert } from '@/types';
 import { generateBudgetAlerts, checkGoalMilestones } from '@/lib/budget-calculations';
-import { formatCurrency } from '@/lib/calculations';
+import { useCurrency } from '@/hooks/use-currency';
 import { 
   AlertTriangle, 
   CheckCircle, 
@@ -50,6 +50,7 @@ export const AlertsSystem: React.FC<AlertsSystemProps> = ({
   onUpdateAlertSettings,
   onDismissAlert
 }) => {
+  const { formatCurrency } = useCurrency();
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
   const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(new Set());
   const [showSettings, setShowSettings] = useState(false);

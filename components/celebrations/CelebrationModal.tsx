@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { SavingsGoal } from '@/types';
-import { formatCurrency } from '@/lib/calculations';
+import { useCurrency } from '@/hooks/use-currency';
 import { Trophy, Target, CheckCircle2, Sparkles, Share2, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -26,6 +26,7 @@ export const CelebrationModal: React.FC<CelebrationModalProps> = ({
   onClose,
   onShare
 }) => {
+  const { formatCurrency } = useCurrency();
   const [showConfetti, setShowConfetti] = useState(false);
   const [animationPhase, setAnimationPhase] = useState<'enter' | 'celebrate' | 'exit'>('enter');
 

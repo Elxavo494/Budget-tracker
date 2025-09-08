@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { BudgetManager } from './BudgetManager';
 import { GoalsManager } from '../goals/GoalsManager';
 import { CategoryBudgetProgress, GoalProgress } from '@/types';
-import { formatCurrency } from '@/lib/calculations';
+import { useCurrency } from '@/hooks/use-currency';
 import { Target, TrendingUp, Plus, AlertTriangle, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -44,6 +44,7 @@ export const SimpleBudgetGoalsOverview: React.FC<SimpleBudgetGoalsOverviewProps>
   categoryBudgets,
   onCreateCategory
 }) => {
+  const { formatCurrency } = useCurrency();
   const [showBudgetManager, setShowBudgetManager] = useState(false);
   const [showGoalsManager, setShowGoalsManager] = useState(false);
 

@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
-import { formatCurrency } from '@/lib/calculations';
+import { useCurrency } from '@/hooks/use-currency';
 import { calculateEnhancedExpenseAnalytics, getTransactionsByCategory, CategoryHistoricalData } from '@/lib/enhanced-expense-analytics';
 import { RecurringExpense, OneTimeExpense, Category, CategoryBudget } from '@/types';
 import { Calendar, TrendingUp, TrendingDown, Minus, ArrowUp, ArrowDown, Target } from 'lucide-react';
@@ -41,6 +41,7 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
     label: 'This Month'
   }
 }) => {
+  const { formatCurrency } = useCurrency();
   const [selectedCategory, setSelectedCategory] = useState<CategoryHistoricalData | null>(null);
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
 
@@ -169,7 +170,7 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
               return (
                 <div 
                   key={category.name}
-                  className="group flex items-center justify-between py-3 px-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 transition-colors cursor-pointer border border-transparent border-slate-200 dark:border-slate-700"
+                  className="group flex items-center gap-4 justify-between py-3 px-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 transition-colors cursor-pointer border border-transparent border-slate-200 dark:border-slate-700"
                   onClick={() => enhancedAnalytics && handleCategoryClick(category)}
                 >
                   <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -222,7 +223,7 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
                       </div>
 
                       {/* Additional info */}
-                      <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+                      <div className="flex items-center justify-between gap-2 text-[10px] text-slate-500 dark:text-slate-400">
                         {category.transactions.count > 0 && (
                           <span>{category.transactions.count} transactions</span>
                         )}

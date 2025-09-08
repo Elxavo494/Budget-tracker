@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { IconSelector } from '@/components/ui/icon-selector';
 import { SavingsGoal, GoalProgress, GoalContribution } from '@/types';
-import { formatCurrency } from '@/lib/calculations';
+import { useCurrency } from '@/hooks/use-currency';
 import { Plus, Edit, Trash2, Target, Calendar, TrendingUp, DollarSign, CheckCircle2 } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -34,6 +34,7 @@ export const GoalsManager: React.FC<GoalsManagerProps> = ({
   onDeleteGoal,
   onAddContribution
 }) => {
+  const { formatCurrency } = useCurrency();
   const [open, setOpen] = useState(false);
   const [contributionOpen, setContributionOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState<SavingsGoal | null>(null);

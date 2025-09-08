@@ -19,7 +19,7 @@ import {
   calculateAllGoalsProgress, 
   calculateMonthlyBudgetSummary 
 } from '@/lib/budget-calculations';
-import { formatCurrency } from '@/lib/calculations';
+import { useCurrency } from '@/hooks/use-currency';
 import { Target, TrendingUp, AlertTriangle, CheckCircle, DollarSign, PiggyBank } from 'lucide-react';
 
 interface BudgetGoalsDashboardProps {
@@ -43,6 +43,7 @@ export const BudgetGoalsDashboard: React.FC<BudgetGoalsDashboardProps> = ({
   onUpdateAlertSettings,
   onDismissAlert
 }) => {
+  const { formatCurrency } = useCurrency();
   const [celebrationGoal, setCelebrationGoal] = useState<SavingsGoal | null>(null);
   const [celebrationMilestone, setCelebrationMilestone] = useState<number | undefined>();
   const [showCelebration, setShowCelebration] = useState(false);

@@ -5,7 +5,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CategoryBudgetProgress } from '@/types';
-import { formatCurrency } from '@/lib/calculations';
+import { useCurrency } from '@/hooks/use-currency';
 import { TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Target, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -22,6 +22,7 @@ export const BudgetProgressCards: React.FC<BudgetProgressCardsProps> = ({
   showManageButton = true,
   maxCards = 6
 }) => {
+  const { formatCurrency } = useCurrency();
   const displayedBudgets = budgetProgress.slice(0, maxCards);
   const hasMoreBudgets = budgetProgress.length > maxCards;
 

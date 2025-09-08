@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { CategoryBudget, Category, CategoryBudgetProgress } from '@/types';
-import { formatCurrency } from '@/lib/calculations';
+import { useCurrency } from '@/hooks/use-currency';
 import { CategoryForm } from '@/components/forms/CategoryForm';
 import { Settings, Plus, Edit, Trash2, AlertTriangle, CheckCircle, Target } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -35,6 +35,7 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({
   onDeleteBudget,
   onCreateCategory
 }) => {
+  const { formatCurrency } = useCurrency();
   const [open, setOpen] = useState(false);
   const [editingBudget, setEditingBudget] = useState<CategoryBudget | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');

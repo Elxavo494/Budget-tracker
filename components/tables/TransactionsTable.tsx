@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Trash2, Edit, Search, Plus, ChevronDown, ChevronUp } from 'lucide-react';
 import { useSupabaseFinance } from '@/contexts/SupabaseFinanceContext';
-import { formatCurrency } from '@/lib/calculations';
+import { useCurrency } from '@/hooks/use-currency';
 import { format } from 'date-fns';
 import { UnifiedIncomeForm } from '@/components/forms/UnifiedIncomeForm';
 import { UnifiedExpenseForm } from '@/components/forms/UnifiedExpenseForm';
@@ -35,6 +35,7 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
   monthStart,
   monthEnd,
 }) => {
+  const { formatCurrency } = useCurrency();
   const { 
     data, 
     deleteRecurringIncome, 

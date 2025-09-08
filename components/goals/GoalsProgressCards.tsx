@@ -5,7 +5,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { GoalProgress } from '@/types';
-import { formatCurrency } from '@/lib/calculations';
+import { useCurrency } from '@/hooks/use-currency';
 import { Target, Calendar, TrendingUp, CheckCircle2, Plus } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -25,6 +25,7 @@ export const GoalsProgressCards: React.FC<GoalsProgressCardsProps> = ({
   showManageButton = true,
   maxCards = 3
 }) => {
+  const { formatCurrency } = useCurrency();
   const displayedGoals = goalsProgress.slice(0, maxCards);
   const hasMoreGoals = goalsProgress.length > maxCards;
 
@@ -218,6 +219,7 @@ export const GoalsOverviewCard: React.FC<{
   goalsProgress: GoalProgress[];
   onViewDetails?: () => void;
 }> = ({ goalsProgress, onViewDetails }) => {
+  const { formatCurrency } = useCurrency();
   const activeGoals = goalsProgress.filter(g => !g.goal.isCompleted);
   const completedGoals = goalsProgress.filter(g => g.goal.isCompleted);
   const totalTargetAmount = goalsProgress.reduce((sum, g) => sum + g.goal.targetAmount, 0);
