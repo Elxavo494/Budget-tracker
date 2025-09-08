@@ -295,6 +295,7 @@ export const MiniCelebration: React.FC<{
   milestone?: number;
   onClose: () => void;
 }> = ({ goal, milestone, onClose }) => {
+  const { formatCurrency } = useCurrency();
   const isCompleted = milestone === 1.0 || goal.isCompleted;
   const milestonePercentage = milestone ? milestone * 100 : 100;
 

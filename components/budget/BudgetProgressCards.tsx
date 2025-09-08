@@ -186,6 +186,7 @@ export const BudgetOverviewCard: React.FC<{
   budgetProgress: CategoryBudgetProgress[];
   onViewDetails?: () => void;
 }> = ({ budgetProgress, onViewDetails }) => {
+  const { formatCurrency } = useCurrency();
   const totalBudget = budgetProgress.reduce((sum, budget) => sum + budget.budgetLimit, 0);
   const totalSpent = budgetProgress.reduce((sum, budget) => sum + budget.currentSpent, 0);
   const overallProgress = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
