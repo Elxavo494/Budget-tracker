@@ -534,7 +534,7 @@ export const Dashboard: React.FC = () => {
                 </div>
                 
                 <div className="flex justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2">
-                  <span><b>{(idealSpendingProgress).toFixed(1)}%</b> flexible budget used, <b>{(100 - idealSpendingProgress).toFixed(1)}</b>% remaining</span>
+                  <span><b>{(idealSpendingProgress).toFixed(1)}%</b> flex budget used, <b>{(100 - idealSpendingProgress).toFixed(1)}</b>% remaining</span>
                   <span>{daysRemaining} {daysRemaining === 1 ? 'day' : 'days'} {isCurrentMonth ? 'left' : 'total'}</span>
      
                 </div>
