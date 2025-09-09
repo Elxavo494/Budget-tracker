@@ -98,6 +98,22 @@ export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
 
     // Add recurring incomes
     data.recurringIncomes.forEach(income => {
+      const startDate = new Date(income.startDate);
+      
+      // Skip if the recurring income hasn't started yet (start date is after the current month)
+      if (startDate > monthEnd) {
+        return;
+      }
+      
+      // Skip if the recurring income has ended before the current month
+      if (income.endDate) {
+        const endDate = new Date(income.endDate);
+        // If the end date is before the start of the current month, skip this income
+        if (endDate < monthStart) {
+          return;
+        }
+      }
+      
       transactions.push({
         id: income.id,
         name: income.name,
@@ -117,6 +133,22 @@ export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
 
     // Add recurring expenses
     data.recurringExpenses.forEach(expense => {
+      const startDate = new Date(expense.startDate);
+      
+      // Skip if the recurring expense hasn't started yet (start date is after the current month)
+      if (startDate > monthEnd) {
+        return;
+      }
+      
+      // Skip if the recurring expense has ended before the current month
+      if (expense.endDate) {
+        const endDate = new Date(expense.endDate);
+        // If the end date is before the start of the current month, skip this expense
+        if (endDate < monthStart) {
+          return;
+        }
+      }
+      
       transactions.push({
         id: expense.id,
         name: expense.name,
