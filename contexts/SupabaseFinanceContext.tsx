@@ -52,6 +52,7 @@ interface SupabaseFinanceContextType {
   updateSavingsGoal: (goalId: string, updates: Partial<SavingsGoal>) => Promise<void>;
   deleteSavingsGoal: (goalId: string) => Promise<void>;
   addGoalContribution: (goalId: string, amount: number, description?: string) => Promise<void>;
+  deleteGoalContribution: (contributionId: string, goalId: string, amount: number) => Promise<void>;
   // Alert methods
   updateBudgetAlert: (alertType: string, isEnabled: boolean) => Promise<void>;
 }
@@ -1508,6 +1509,71 @@ export const SupabaseFinanceProvider: React.FC<{ children: React.ReactNode }> = 
     toast.success(`Added ${formatCurrency(amount)} to ${currentGoal.name}`);
   };
 
+  const deleteGoalContribution = async (contributionId: string, goalId: string, amount: number) => {
+    if (!supabase) throw new Error('Supabase not configured');
+    if (!user) throw new Error('User not authenticated');
+    
+    // Delete the contribution
+    const { error: contributionError } = await supabase
+      .from('goal_contributions')
+      .delete()
+      .eq('id', contributionId)
+      .eq('user_id', user.id);
+
+    if (contributionError) throw contributionError;
+
+    // Update the goal's current amount
+    const currentGoal = data.savingsGoals.find(g => g.id === goalId);
+    if (!currentGoal) throw new Error('Goal not found');
+
+    const newCurrentAmount = Math.max(0, currentGoal.currentAmount - amount);
+    const isCompleted = newCurrentAmount >= currentGoal.targetAmount;
+
+    const { data: goalData, error: goalError } = await supabase
+      .from('savings_goals')
+      .update({
+        current_amount: newCurrentAmount,
+        is_completed: isCompleted,
+        completed_at: isCompleted ? new Date().toISOString() : null
+      })
+      .eq('id', goalId)
+      .select()
+      .single();
+
+    if (goalError) throw goalError;
+
+    // Transform the updated goal data
+    const updatedGoal: SavingsGoal = {
+      id: goalData.id,
+      name: goalData.name,
+      description: goalData.description,
+      targetAmount: goalData.target_amount,
+      currentAmount: goalData.current_amount,
+      targetDate: goalData.target_date,
+      priority: goalData.priority,
+      color: goalData.color,
+      iconUrl: goalData.icon_url,
+      iconType: goalData.icon_type,
+      presetIconId: goalData.preset_icon_id,
+      isActive: goalData.is_active,
+      isCompleted: goalData.is_completed,
+      completedAt: goalData.completed_at,
+      createdAt: goalData.created_at,
+      updatedAt: goalData.updated_at,
+    };
+
+    // Update local state
+    setData(prev => ({
+      ...prev,
+      goalContributions: prev.goalContributions.filter(c => c.id !== contributionId),
+      savingsGoals: prev.savingsGoals.map(goal => 
+        goal.id === goalId ? updatedGoal : goal
+      ),
+    }));
+
+    toast.success('Contribution deleted successfully');
+  };
+
   const updateBudgetAlert = async (alertType: string, isEnabled: boolean) => {
     if (!supabase) throw new Error('Supabase not configured');
     if (!user) throw new Error('User not authenticated');
@@ -1573,6 +1639,7 @@ export const SupabaseFinanceProvider: React.FC<{ children: React.ReactNode }> = 
       updateSavingsGoal,
       deleteSavingsGoal,
       addGoalContribution,
+      deleteGoalContribution,
       updateBudgetAlert,
     }}>
       {children}

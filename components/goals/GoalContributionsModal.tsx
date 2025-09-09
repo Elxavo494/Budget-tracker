@@ -1,13 +1,16 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { useCurrency } from '@/hooks/use-currency';
 import { format, differenceInDays } from 'date-fns';
 import { SavingsGoal, GoalContribution, GoalMilestone } from '@/types';
-import { Calendar, Target, TrendingUp, DollarSign, BarChart3, Trophy, CheckCircle, Star } from 'lucide-react';
+import { Calendar, Target, TrendingUp, DollarSign, BarChart3, Trophy, CheckCircle, Star, Plus, Trash2 } from 'lucide-react';
 
 interface GoalContributionsModalProps {
   isOpen: boolean;
@@ -17,6 +20,8 @@ interface GoalContributionsModalProps {
   milestones: GoalMilestone[];
   progressPercentage: number;
   remainingAmount: number;
+  onAddContribution: (goalId: string, amount: number, description?: string) => Promise<void>;
+  onDeleteContribution?: (contributionId: string, amount: number) => Promise<void>;
 }
 
 export const GoalContributionsModal: React.FC<GoalContributionsModalProps> = ({
@@ -26,13 +31,56 @@ export const GoalContributionsModal: React.FC<GoalContributionsModalProps> = ({
   contributions,
   milestones,
   progressPercentage,
-  remainingAmount
+  remainingAmount,
+  onAddContribution,
+  onDeleteContribution
 }) => {
   const { formatCurrency } = useCurrency();
+  const [showContributionForm, setShowContributionForm] = useState(false);
+  const [contributionAmount, setContributionAmount] = useState('');
+  const [contributionDescription, setContributionDescription] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deletingContributionId, setDeletingContributionId] = useState<string | null>(null);
 
-  // Sort contributions by date (newest first)
+  const handleDeleteContribution = async (contributionId: string, amount: number) => {
+    if (!onDeleteContribution || deletingContributionId) return;
+    
+    const confirmDelete = window.confirm('Are you sure you want to delete this contribution? This action cannot be undone.');
+    if (!confirmDelete) return;
+
+    setDeletingContributionId(contributionId);
+    try {
+      await onDeleteContribution(contributionId, amount);
+    } catch (error) {
+      console.error('Error deleting contribution:', error);
+    } finally {
+      setDeletingContributionId(null);
+    }
+  };
+
+  const handleSubmitContribution = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!contributionAmount || isSubmitting) return;
+
+    const amount = parseFloat(contributionAmount);
+    if (isNaN(amount) || amount <= 0) return;
+
+    setIsSubmitting(true);
+    try {
+      await onAddContribution(goal.id, amount, contributionDescription || undefined);
+      setContributionAmount('');
+      setContributionDescription('');
+      setShowContributionForm(false);
+    } catch (error) {
+      console.error('Error adding contribution:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Sort contributions by creation date (newest first)
   const sortedContributions = [...contributions].sort(
-    (a, b) => new Date(b.contributionDate).getTime() - new Date(a.contributionDate).getTime()
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
   // Sort milestones by percentage
@@ -226,15 +274,92 @@ export const GoalContributionsModal: React.FC<GoalContributionsModalProps> = ({
           )}
 
           {/* Contributions */}
-          {sortedContributions.length > 0 && (
-            <div>
-              <div className="flex items-center gap-2 mb-4">
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
                 <DollarSign className="h-4 w-4 text-slate-500 dark:text-slate-400" />
                 <h3 className="font-semibold text-base text-slate-800 dark:text-slate-200">Contributions</h3>
-                <Badge variant="secondary" className="text-xs px-2 py-1">
-                  {sortedContributions.length}
-                </Badge>
+                {sortedContributions.length > 0 && (
+                  <Badge variant="secondary" className="text-xs px-2 py-1">
+                    {sortedContributions.length}
+                  </Badge>
+                )}
               </div>
+              {!goal.isCompleted && (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setShowContributionForm(!showContributionForm)}
+                  className="flex items-center gap-1"
+                >
+                  <Plus className="h-3 w-3" />
+                  Add Contribution
+                </Button>
+              )}
+            </div>
+
+            {/* Add Contribution Form */}
+            {showContributionForm && !goal.isCompleted && (
+              <form onSubmit={handleSubmitContribution} className="mb-6 p-4 rounded-lg border bg-blue-50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800/30">
+                <h4 className="font-medium text-sm text-blue-800 dark:text-blue-300 mb-3">Add New Contribution</h4>
+                <div className="space-y-3">
+                  <div>
+                    <label htmlFor="amount" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                      Amount *
+                    </label>
+                    <Input
+                      id="amount"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0.00"
+                      value={contributionAmount}
+                      onChange={(e) => setContributionAmount(e.target.value)}
+                      className="w-full"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="description" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                      Description (optional)
+                    </label>
+                    <Textarea
+                      id="description"
+                      placeholder="Add a note about this contribution..."
+                      value={contributionDescription}
+                      onChange={(e) => setContributionDescription(e.target.value)}
+                      className="w-full resize-none"
+                      rows={2}
+                    />
+                  </div>
+                  <div className="flex gap-2 pt-2">
+                    <Button 
+                      type="submit" 
+                      size="sm" 
+                      disabled={isSubmitting || !contributionAmount}
+                      className="flex-1"
+                    >
+                      {isSubmitting ? 'Adding...' : 'Add Contribution'}
+                    </Button>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        setShowContributionForm(false);
+                        setContributionAmount('');
+                        setContributionDescription('');
+                      }}
+                      className="flex-1"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              </form>
+            )}
+
+            {sortedContributions.length > 0 ? (
               <div className="space-y-3">
                 {sortedContributions.map((contribution) => (
                   <div 
@@ -259,16 +384,40 @@ export const GoalContributionsModal: React.FC<GoalContributionsModalProps> = ({
                         {format(new Date(contribution.contributionDate), 'EEEE, MMMM d, yyyy')}
                       </div>
                     </div>
-                    <div className="text-right ml-3">
-                      <div className="font-semibold text-sm text-green-600 dark:text-green-400">
-                        +{formatCurrency(contribution.amount)}
+                    <div className="flex items-center gap-3 ml-3">
+                      <div className="text-right">
+                        <div className="font-semibold text-sm text-green-600 dark:text-green-400">
+                          +{formatCurrency(contribution.amount)}
+                        </div>
                       </div>
+                      {onDeleteContribution && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteContribution(contribution.id, contribution.amount)}
+                          disabled={deletingContributionId === contribution.id}
+                          className="p-1 h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                        >
+                          {deletingContributionId === contribution.id ? (
+                            <div className="w-3 h-3 border border-red-500 border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <Trash2 className="h-3 w-3" />
+                          )}
+                        </Button>
+                      )}
                     </div>
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            ) : !showContributionForm && (
+              <div className="text-center py-8 text-slate-500 dark:text-slate-400">
+                <DollarSign className="h-12 w-12 mx-auto mb-3 opacity-40" />
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  No contributions yet. {!goal.isCompleted && 'Click "Add Contribution" to get started!'}
+                </p>
+              </div>
+            )}
+          </div>
 
           {/* Empty state */}
           {sortedContributions.length === 0 && sortedMilestones.length === 0 && (

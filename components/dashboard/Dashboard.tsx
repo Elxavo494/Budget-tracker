@@ -50,6 +50,7 @@ export const Dashboard: React.FC = () => {
     updateSavingsGoal,
     deleteSavingsGoal,
     addGoalContribution,
+    deleteGoalContribution,
     addCategory
   } = useSupabaseFinance();
   
@@ -488,6 +489,7 @@ export const Dashboard: React.FC = () => {
           onUpdateGoal={updateSavingsGoal}
           onDeleteGoal={deleteSavingsGoal}
           onAddContribution={addGoalContribution}
+          onDeleteContribution={deleteGoalContribution}
           categories={data.categories}
           goals={data.savingsGoals || []}
           categoryBudgets={data.categoryBudgets || []}

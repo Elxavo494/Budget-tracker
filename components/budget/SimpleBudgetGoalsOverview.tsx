@@ -27,6 +27,7 @@ interface SimpleBudgetGoalsOverviewProps {
   onUpdateGoal: (goalId: string, updates: any) => Promise<void>;
   onDeleteGoal: (goalId: string) => Promise<void>;
   onAddContribution: (goalId: string, amount: number, description?: string) => Promise<void>;
+  onDeleteContribution?: (contributionId: string, goalId: string, amount: number) => Promise<void>;
   categories: any[];
   goals: any[];
   categoryBudgets: any[];
@@ -48,6 +49,7 @@ export const SimpleBudgetGoalsOverview: React.FC<SimpleBudgetGoalsOverviewProps>
   onUpdateGoal,
   onDeleteGoal,
   onAddContribution,
+  onDeleteContribution,
   categories,
   goals,
   categoryBudgets,
@@ -562,18 +564,20 @@ export const SimpleBudgetGoalsOverview: React.FC<SimpleBudgetGoalsOverviewProps>
         />
       )}
 
-      {/* Goal Contributions Modal */}
-      {selectedGoal && (
-        <GoalContributionsModal
-          isOpen={!!selectedGoal}
-          onClose={() => setSelectedGoal(null)}
-          goal={selectedGoal.goal}
-          contributions={getGoalContributions(goalContributions, selectedGoal.goal.id)}
-          milestones={getGoalMilestones(goalMilestones, selectedGoal.goal.id)}
-          progressPercentage={calculateGoalProgressPercentage(selectedGoal.goal)}
-          remainingAmount={calculateGoalRemainingAmount(selectedGoal.goal)}
-        />
-      )}
+        {/* Goal Contributions Modal */}
+        {selectedGoal && (
+          <GoalContributionsModal
+            isOpen={!!selectedGoal}
+            onClose={() => setSelectedGoal(null)}
+            goal={selectedGoal.goal}
+            contributions={getGoalContributions(goalContributions, selectedGoal.goal.id)}
+            milestones={getGoalMilestones(goalMilestones, selectedGoal.goal.id)}
+            progressPercentage={calculateGoalProgressPercentage(selectedGoal.goal)}
+            remainingAmount={calculateGoalRemainingAmount(selectedGoal.goal)}
+            onAddContribution={onAddContribution}
+            onDeleteContribution={onDeleteContribution ? (contributionId, amount) => onDeleteContribution(contributionId, selectedGoal.goal.id, amount) : undefined}
+          />
+        )}
     </div>
   );
 };
