@@ -487,7 +487,7 @@ export const Dashboard: React.FC = () => {
                     </p>
                     {maaltijdchequesLeft > 0 && (
                       <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-                        <b>{formatCurrency(maaltijdchequesLeft)}</b> of {formatCurrency(maaltijdchequesIncome)} left in Meal Vouchers
+                        <b>{formatCurrency(maaltijdchequesLeft)}</b> of {formatCurrency(maaltijdchequesIncome)} left on Meal Vouchers
                       </p>
                     )}
                   </div>
@@ -533,10 +533,10 @@ export const Dashboard: React.FC = () => {
                   )}
                 </div>
                 
-                <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400 mt-2">
-                  <span>{(idealSpendingProgress).toFixed(1)}% of discretionary budget used</span>
+                <div className="flex justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2">
+                  <span><b>{(idealSpendingProgress).toFixed(1)}%</b> flexible budget used, <b>{(100 - idealSpendingProgress).toFixed(1)}</b>% remaining</span>
                   <span>{daysRemaining} {daysRemaining === 1 ? 'day' : 'days'} {isCurrentMonth ? 'left' : 'total'}</span>
-                  <span>{(100 - idealSpendingProgress).toFixed(1)}% discretionary remaining</span>
+     
                 </div>
               </CardContent>
             </Card>
