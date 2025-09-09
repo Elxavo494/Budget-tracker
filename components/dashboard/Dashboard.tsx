@@ -256,6 +256,10 @@ export const Dashboard: React.FC = () => {
   const leftToSpend = monthlyBudget - totalExpenses;
   const spendingProgress = totalIncome > 0 ? (totalExpenses / totalIncome) * 100 : 0;
   
+  // Calculate available spending budget after recurring expenses
+  const availableSpendingBudget = totalIncome - recurringExpenses;
+  const discretionaryExpenses = oneTimeExpenses; // Only one-time expenses are discretionary
+  
   // Calculate weekly spending amount
   const weeksRemaining = calculateWeeksRemainingInMonth(selectedDate);
   const leftToSpendPerWeek = weeksRemaining > 0 ? leftToSpend / weeksRemaining : 0;
@@ -271,6 +275,9 @@ export const Dashboard: React.FC = () => {
   const totalDaysInMonth = differenceInDays(monthEnd, monthStart) + 1;
   const daysElapsed = isCurrentMonth ? totalDaysInMonth - daysRemaining : totalDaysInMonth;
   const timeProgress = isCurrentMonth ? (daysElapsed / totalDaysInMonth) * 100 : 100;
+  
+  // Calculate ideal spending progress based on available budget after recurring expenses
+  const idealSpendingProgress = availableSpendingBudget > 0 ? (discretionaryExpenses / availableSpendingBudget) * 100 : 0;
 
   const expensesByCategory = calculateExpensesByCategory(
     data.recurringExpenses,
@@ -496,7 +503,7 @@ export const Dashboard: React.FC = () => {
                 <div className="w-full bg-muted rounded-full h-3 overflow-hidden relative">
                   <div 
                     className="h-full rounded-full gradient-primary transition-all duration-500 ease-out"
-                    style={{ width: `${Math.min(spendingProgress, 100)}%` }}
+                    style={{ width: `${Math.min(idealSpendingProgress, 100)}%` }}
                   />
                   {/* Time-based indicator - shows where spending should be based on days elapsed */}
                   {isCurrentMonth && (
@@ -517,6 +524,9 @@ export const Dashboard: React.FC = () => {
                           <p className="text-xs text-muted-foreground">
                             {daysElapsed} of {totalDaysInMonth} days passed
                           </p>
+                          <p className="text-xs text-muted-foreground">
+                            Target: {formatCurrency(availableSpendingBudget * timeProgress / 100)} of discretionary budget
+                          </p>
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
@@ -524,9 +534,9 @@ export const Dashboard: React.FC = () => {
                 </div>
                 
                 <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400 mt-2">
-                  <span>{(spendingProgress).toFixed(1)}% spent</span>
+                  <span>{(idealSpendingProgress).toFixed(1)}% of discretionary budget used</span>
                   <span>{daysRemaining} {daysRemaining === 1 ? 'day' : 'days'} {isCurrentMonth ? 'left' : 'total'}</span>
-                  <span>{(100 - spendingProgress).toFixed(1)}% remaining</span>
+                  <span>{(100 - idealSpendingProgress).toFixed(1)}% discretionary remaining</span>
                 </div>
               </CardContent>
             </Card>
