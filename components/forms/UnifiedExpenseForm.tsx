@@ -11,6 +11,7 @@ import { FloatingSelect } from '@/components/ui/floating-select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { IconSelector } from '@/components/ui/icon-selector';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Plus, Edit, Camera, Trash2 } from 'lucide-react';
 import { RecurringExpense, OneTimeExpense, RecurrenceType } from '@/types';
 import { useSupabaseFinance } from '@/contexts/SupabaseFinanceContext';
@@ -51,6 +52,7 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
           name: oneTimeFormData.name || prev.name,
           amount: oneTimeFormData.amount || prev.amount,
           categoryId: oneTimeFormData.categoryId || prev.categoryId,
+          isMaaltijdcheques: oneTimeFormData.isMaaltijdcheques,
         }));
         setRecurringIconData(prev => ({
           ...prev,
@@ -68,6 +70,7 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
           name: recurringFormData.name || prev.name,
           amount: recurringFormData.amount || prev.amount,
           categoryId: recurringFormData.categoryId || prev.categoryId,
+          isMaaltijdcheques: recurringFormData.isMaaltijdcheques,
         }));
         setOneTimeIconData(prev => ({
           ...prev,
@@ -93,6 +96,7 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
     categoryId: recurringExpense?.categoryId || '',
     startDate: recurringExpense?.startDate || format(new Date(), 'yyyy-MM-dd'),
     endDate: recurringExpense?.endDate || '',
+    isMaaltijdcheques: recurringExpense?.isMaaltijdcheques || false,
   });
 
   const [oneTimeFormData, setOneTimeFormData] = useState({
@@ -100,6 +104,7 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
     amount: oneTimeExpense?.amount?.toString() || '',
     categoryId: oneTimeExpense?.categoryId || '',
     date: oneTimeExpense?.date || format(new Date(), 'yyyy-MM-dd'),
+    isMaaltijdcheques: oneTimeExpense?.isMaaltijdcheques || false,
   });
 
   // Icon state management
@@ -188,6 +193,7 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
         categoryId: recurringFormData.categoryId,
         startDate: recurringFormData.startDate,
         endDate: recurringFormData.endDate || undefined,
+        isMaaltijdcheques: recurringFormData.isMaaltijdcheques,
       };
 
       
@@ -226,6 +232,7 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
         amount: parseFloat(oneTimeFormData.amount),
         categoryId: oneTimeFormData.categoryId,
         date: oneTimeFormData.date,
+        isMaaltijdcheques: oneTimeFormData.isMaaltijdcheques,
       };
 
       
@@ -259,12 +266,14 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
       categoryId: '',
       startDate: format(new Date(), 'yyyy-MM-dd'),
       endDate: '',
+      isMaaltijdcheques: false,
     });
     setOneTimeFormData({
       name: '',
       amount: '',
       categoryId: '',
       date: format(new Date(), 'yyyy-MM-dd'),
+      isMaaltijdcheques: false,
     });
     onClose?.();
   };
@@ -388,6 +397,18 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
                       </Button>
                     </CategoryForm>
                   </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="onetime-maaltijdcheques"
+                      checked={oneTimeFormData.isMaaltijdcheques}
+                      onCheckedChange={(checked) => 
+                        setOneTimeFormData({ ...oneTimeFormData, isMaaltijdcheques: !!checked })
+                      }
+                    />
+                    <Label htmlFor="onetime-maaltijdcheques">Paid with Maaltijdcheques</Label>
+                  </div>
+                  
                   <FloatingInput
                     id="onetime-date"
                     label="Date"
@@ -470,6 +491,18 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
                       </Button>
                     </CategoryForm>
                   </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="recurring-maaltijdcheques"
+                      checked={recurringFormData.isMaaltijdcheques}
+                      onCheckedChange={(checked) => 
+                        setRecurringFormData({ ...recurringFormData, isMaaltijdcheques: !!checked })
+                      }
+                    />
+                    <Label htmlFor="recurring-maaltijdcheques">Paid with Maaltijdcheques</Label>
+                  </div>
+                  
                   <FloatingSelect
                     label="Recurrence"
                     value={recurringFormData.recurrence}
@@ -594,6 +627,17 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
                 </CategoryForm>
               </div>
 
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="recurring-maaltijdcheques-2"
+                  checked={recurringFormData.isMaaltijdcheques}
+                  onCheckedChange={(checked) => 
+                    setRecurringFormData({ ...recurringFormData, isMaaltijdcheques: !!checked })
+                  }
+                />
+                <Label htmlFor="recurring-maaltijdcheques-2">Paid with Maaltijdcheques</Label>
+              </div>
+
               <FloatingSelect
                 label="Recurrence"
                 value={recurringFormData.recurrence}
@@ -711,6 +755,17 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
                     <Plus className="h-4 w-4" />
                   </Button>
                 </CategoryForm>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="edit-onetime-maaltijdcheques"
+                  checked={oneTimeFormData.isMaaltijdcheques}
+                  onCheckedChange={(checked) => 
+                    setOneTimeFormData({ ...oneTimeFormData, isMaaltijdcheques: !!checked })
+                  }
+                />
+                <Label htmlFor="edit-onetime-maaltijdcheques">Paid with Maaltijdcheques</Label>
               </div>
 
               <FloatingInput

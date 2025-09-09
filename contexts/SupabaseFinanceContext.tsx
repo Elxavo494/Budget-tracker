@@ -215,6 +215,7 @@ export const SupabaseFinanceProvider: React.FC<{ children: React.ReactNode }> = 
           iconUrl: expense.icon_url,
           iconType: expense.icon_type,
           presetIconId: expense.preset_icon_id,
+          isMaaltijdcheques: expense.is_maaltijdcheques,
           createdAt: expense.created_at,
         }));
 
@@ -240,6 +241,7 @@ export const SupabaseFinanceProvider: React.FC<{ children: React.ReactNode }> = 
           iconUrl: expense.icon_url,
           iconType: expense.icon_type,
           presetIconId: expense.preset_icon_id,
+          isMaaltijdcheques: expense.is_maaltijdcheques,
           createdAt: expense.created_at,
         }));
 
@@ -640,6 +642,7 @@ export const SupabaseFinanceProvider: React.FC<{ children: React.ReactNode }> = 
           end_date: expense.endDate || null,
           category_id: expense.categoryId,
           icon_url: imageUrl || null,
+          is_maaltijdcheques: expense.isMaaltijdcheques || false,
           user_id: user.id 
         }])
         .select()
@@ -667,6 +670,7 @@ export const SupabaseFinanceProvider: React.FC<{ children: React.ReactNode }> = 
         endDate: newExpense.end_date,
         categoryId: newExpense.category_id,
         iconUrl: newExpense.icon_url,
+        isMaaltijdcheques: newExpense.is_maaltijdcheques,
         createdAt: newExpense.created_at,
       };
       
@@ -712,6 +716,7 @@ export const SupabaseFinanceProvider: React.FC<{ children: React.ReactNode }> = 
           icon_url: iconUrl || null,
           icon_type: expense.iconType || null,
           preset_icon_id: expense.presetIconId || null,
+          is_maaltijdcheques: expense.isMaaltijdcheques || false,
         })
         .eq('id', expense.id);
 
@@ -953,6 +958,7 @@ export const SupabaseFinanceProvider: React.FC<{ children: React.ReactNode }> = 
           icon_url: finalIconUrl || null,
           icon_type: expense.iconType || 'custom',
           preset_icon_id: expense.presetIconId || null,
+          is_maaltijdcheques: expense.isMaaltijdcheques || false,
           user_id: user.id 
         }])
         .select()
@@ -980,6 +986,7 @@ export const SupabaseFinanceProvider: React.FC<{ children: React.ReactNode }> = 
         iconUrl: newExpense.icon_url,
         iconType: newExpense.icon_type,
         presetIconId: newExpense.preset_icon_id,
+        isMaaltijdcheques: newExpense.is_maaltijdcheques,
         createdAt: newExpense.created_at,
       };
       
@@ -1023,6 +1030,7 @@ export const SupabaseFinanceProvider: React.FC<{ children: React.ReactNode }> = 
           icon_url: iconUrl || null,
           icon_type: expense.iconType || null,
           preset_icon_id: expense.presetIconId || null,
+          is_maaltijdcheques: expense.isMaaltijdcheques || false,
         })
         .eq('id', expense.id);
 

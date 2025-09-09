@@ -30,6 +30,7 @@ export interface RecurringExpense {
   iconUrl?: string;
   iconType?: 'custom' | 'preset';
   presetIconId?: string;
+  isMaaltijdcheques?: boolean;
   createdAt: string;
 }
 
@@ -53,6 +54,7 @@ export interface OneTimeExpense {
   iconUrl?: string;
   iconType?: 'custom' | 'preset';
   presetIconId?: string;
+  isMaaltijdcheques?: boolean;
   createdAt: string;
 }
 

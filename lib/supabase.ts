@@ -133,6 +133,7 @@ export type Database = {
           end_date: string | null;
           category_id: string;
           user_id: string;
+          is_maaltijdcheques: boolean;
           created_at: string;
         };
         Insert: {
@@ -144,6 +145,7 @@ export type Database = {
           end_date?: string | null;
           category_id: string;
           user_id: string;
+          is_maaltijdcheques?: boolean;
           created_at?: string;
         };
         Update: {
@@ -155,6 +157,7 @@ export type Database = {
           end_date?: string | null;
           category_id?: string;
           user_id?: string;
+          is_maaltijdcheques?: boolean;
           created_at?: string;
         };
       };
@@ -192,6 +195,7 @@ export type Database = {
           date: string;
           category_id: string;
           user_id: string;
+          is_maaltijdcheques: boolean;
           created_at: string;
         };
         Insert: {
@@ -201,6 +205,7 @@ export type Database = {
           date: string;
           category_id: string;
           user_id: string;
+          is_maaltijdcheques?: boolean;
           created_at?: string;
         };
         Update: {
@@ -210,6 +215,7 @@ export type Database = {
           date?: string;
           category_id?: string;
           user_id?: string;
+          is_maaltijdcheques?: boolean;
           created_at?: string;
         };
       };

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Plus, Edit } from 'lucide-react';
 import { OneTimeExpense } from '@/types';
@@ -29,6 +30,7 @@ export const OneTimeExpenseForm: React.FC<OneTimeExpenseFormProps> = ({
     amount: expense?.amount?.toString() || '',
     categoryId: expense?.categoryId || '',
     date: expense?.date || format(new Date(), 'yyyy-MM-dd'),
+    isMaaltijdcheques: expense?.isMaaltijdcheques || false,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -44,6 +46,7 @@ export const OneTimeExpenseForm: React.FC<OneTimeExpenseFormProps> = ({
         amount: parseFloat(formData.amount),
         categoryId: formData.categoryId,
         date: formData.date,
+        isMaaltijdcheques: formData.isMaaltijdcheques,
       };
 
       if (expense) {
@@ -58,6 +61,7 @@ export const OneTimeExpenseForm: React.FC<OneTimeExpenseFormProps> = ({
         amount: '',
         categoryId: '',
         date: format(new Date(), 'yyyy-MM-dd'),
+        isMaaltijdcheques: false,
       });
       onClose?.();
     } catch (error) {
@@ -125,6 +129,17 @@ export const OneTimeExpenseForm: React.FC<OneTimeExpenseFormProps> = ({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="maaltijdcheques"
+              checked={formData.isMaaltijdcheques}
+              onCheckedChange={(checked) => 
+                setFormData({ ...formData, isMaaltijdcheques: !!checked })
+              }
+            />
+            <Label htmlFor="maaltijdcheques">Paid with Maaltijdcheques</Label>
           </div>
 
           <div>

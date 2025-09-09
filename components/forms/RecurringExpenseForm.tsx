@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Plus, Edit } from 'lucide-react';
 import { RecurringExpense, RecurrenceType } from '@/types';
@@ -31,6 +32,7 @@ export const RecurringExpenseForm: React.FC<RecurringExpenseFormProps> = ({
     categoryId: expense?.categoryId || '',
     startDate: expense?.startDate || format(new Date(), 'yyyy-MM-dd'),
     endDate: expense?.endDate || '',
+    isMaaltijdcheques: expense?.isMaaltijdcheques || false,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -48,6 +50,7 @@ export const RecurringExpenseForm: React.FC<RecurringExpenseFormProps> = ({
         categoryId: formData.categoryId,
         startDate: formData.startDate,
         endDate: formData.endDate || undefined,
+        isMaaltijdcheques: formData.isMaaltijdcheques,
       };
 
       if (expense) {
@@ -64,6 +67,7 @@ export const RecurringExpenseForm: React.FC<RecurringExpenseFormProps> = ({
         categoryId: '',
         startDate: format(new Date(), 'yyyy-MM-dd'),
         endDate: '',
+        isMaaltijdcheques: false,
       });
       onClose?.();
     } catch (error) {
@@ -131,6 +135,17 @@ export const RecurringExpenseForm: React.FC<RecurringExpenseFormProps> = ({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="maaltijdcheques"
+              checked={formData.isMaaltijdcheques}
+              onCheckedChange={(checked) => 
+                setFormData({ ...formData, isMaaltijdcheques: !!checked })
+              }
+            />
+            <Label htmlFor="maaltijdcheques">Paid with Maaltijdcheques</Label>
           </div>
 
           <div>

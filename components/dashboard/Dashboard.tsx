@@ -169,11 +169,11 @@ export const Dashboard: React.FC = () => {
   const totalExpenses = recurringExpenses + oneTimeExpenses;
   const balance = totalIncome - totalExpenses;
   
-  // Calculate Maaltijdcheques amount from incomes for the current month
-  const calculateMaaltijdchequesAmount = () => {
-    let maaltijdchequesTotal = 0;
+  // Calculate Maaltijdcheques income for the current month
+  const calculateMaaltijdchequesIncome = () => {
+    let maaltijdchequesIncome = 0;
     
-    // Check recurring incomes
+    // Check recurring incomes for Maaltijdcheques
     data.recurringIncomes.forEach(income => {
       if (income.name.toLowerCase().includes('maaltijdcheques') || income.name.toLowerCase().includes('maaltijd')) {
         // Calculate if this recurring income applies to the selected month
@@ -182,33 +182,74 @@ export const Dashboard: React.FC = () => {
         
         if (startDate <= monthEnd && (!endDate || endDate >= monthStart)) {
           if (income.recurrence === 'monthly') {
-            maaltijdchequesTotal += income.amount;
+            maaltijdchequesIncome += income.amount;
           } else if (income.recurrence === 'weekly') {
             // Calculate weeks in the month
             const weeksInMonth = Math.ceil((monthEnd.getTime() - monthStart.getTime()) / (7 * 24 * 60 * 60 * 1000));
-            maaltijdchequesTotal += income.amount * weeksInMonth;
+            maaltijdchequesIncome += income.amount * weeksInMonth;
           } else if (income.recurrence === 'yearly') {
             // For yearly, divide by 12 for monthly amount
-            maaltijdchequesTotal += income.amount / 12;
+            maaltijdchequesIncome += income.amount / 12;
           }
         }
       }
     });
     
-    // Check one-time incomes
+    // Check one-time incomes for Maaltijdcheques
     data.oneTimeIncomes.forEach(income => {
       if (income.name.toLowerCase().includes('maaltijdcheques') || income.name.toLowerCase().includes('maaltijd')) {
         const incomeDate = new Date(income.date);
         if (incomeDate >= monthStart && incomeDate <= monthEnd) {
-          maaltijdchequesTotal += income.amount;
+          maaltijdchequesIncome += income.amount;
         }
       }
     });
     
-    return maaltijdchequesTotal;
+    return maaltijdchequesIncome;
+  };
+
+  // Calculate Maaltijdcheques expenses for the current month
+  const calculateMaaltijdchequesExpenses = () => {
+    let maaltijdchequesExpenses = 0;
+    
+    // Check recurring expenses marked as Maaltijdcheques
+    data.recurringExpenses.forEach(expense => {
+      if (expense.isMaaltijdcheques) {
+        // Calculate if this recurring expense applies to the selected month
+        const startDate = new Date(expense.startDate);
+        const endDate = expense.endDate ? new Date(expense.endDate) : null;
+        
+        if (startDate <= monthEnd && (!endDate || endDate >= monthStart)) {
+          if (expense.recurrence === 'monthly') {
+            maaltijdchequesExpenses += expense.amount;
+          } else if (expense.recurrence === 'weekly') {
+            // Calculate weeks in the month
+            const weeksInMonth = Math.ceil((monthEnd.getTime() - monthStart.getTime()) / (7 * 24 * 60 * 60 * 1000));
+            maaltijdchequesExpenses += expense.amount * weeksInMonth;
+          } else if (expense.recurrence === 'yearly') {
+            // For yearly, divide by 12 for monthly amount
+            maaltijdchequesExpenses += expense.amount / 12;
+          }
+        }
+      }
+    });
+    
+    // Check one-time expenses marked as Maaltijdcheques
+    data.oneTimeExpenses.forEach(expense => {
+      if (expense.isMaaltijdcheques) {
+        const expenseDate = new Date(expense.date);
+        if (expenseDate >= monthStart && expenseDate <= monthEnd) {
+          maaltijdchequesExpenses += expense.amount;
+        }
+      }
+    });
+    
+    return maaltijdchequesExpenses;
   };
   
-  const maaltijdchequesAmount = calculateMaaltijdchequesAmount();
+  const maaltijdchequesIncome = calculateMaaltijdchequesIncome();
+  const maaltijdchequesExpenses = calculateMaaltijdchequesExpenses();
+  const maaltijdchequesLeft = maaltijdchequesIncome - maaltijdchequesExpenses;
   
   // Calculate budget-related values - use total income as the monthly budget
   const monthlyBudget = totalIncome;
@@ -435,19 +476,19 @@ export const Dashboard: React.FC = () => {
                   <div>
                     <p className="text-sm text-slate-600 dark:text-slate-400">Left to spend</p>
                     <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                      {formatCurrency(leftToSpend)}
+                      {formatCurrency(leftToSpend - maaltijdchequesLeft)}
                     </p>
+                    {maaltijdchequesLeft > 0 && (
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                        {formatCurrency(maaltijdchequesLeft)} left in Meal Vouchers
+                      </p>
+                    )}
                   </div>
                   <div className="text-right">
                     <p className="text-sm text-slate-600 dark:text-slate-400">Monthly budget</p>
                     <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">
                       {formatCurrency(monthlyBudget)}
                     </p>
-                    {maaltijdchequesAmount > 0 && (
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-                        {formatCurrency(maaltijdchequesAmount)} in Maaltijdcheques
-                      </p>
-                    )}
                   </div>
                 </div>
                 
