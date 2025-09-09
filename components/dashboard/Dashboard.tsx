@@ -480,7 +480,7 @@ export const Dashboard: React.FC = () => {
                     </p>
                     {maaltijdchequesLeft > 0 && (
                       <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-                        {formatCurrency(maaltijdchequesLeft)} left in Meal Vouchers
+                        <b>{formatCurrency(maaltijdchequesLeft)}</b> of {formatCurrency(maaltijdchequesIncome)} left in Meal Vouchers
                       </p>
                     )}
                   </div>
