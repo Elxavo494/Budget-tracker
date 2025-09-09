@@ -39,6 +39,7 @@ interface TransactionItem {
   iconUrl?: string;
   iconType?: 'custom' | 'preset';
   presetIconId?: string;
+  createdAt: string;
 }
 
 export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
@@ -110,6 +111,7 @@ export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
         iconUrl: income.iconUrl,
         iconType: income.iconType,
         presetIconId: income.presetIconId,
+        createdAt: income.createdAt,
       });
     });
 
@@ -129,6 +131,7 @@ export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
         iconUrl: expense.iconUrl,
         iconType: expense.iconType,
         presetIconId: expense.presetIconId,
+        createdAt: expense.createdAt,
       });
     });
 
@@ -146,6 +149,7 @@ export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
           iconUrl: income.iconUrl,
           iconType: income.iconType,
           presetIconId: income.presetIconId,
+          createdAt: income.createdAt,
         });
       }
     });
@@ -165,6 +169,7 @@ export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
           iconUrl: expense.iconUrl,
           iconType: expense.iconType,
           presetIconId: expense.presetIconId,
+          createdAt: expense.createdAt,
         });
       }
     });
@@ -195,9 +200,9 @@ export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
     const sortedTransactions = [...filteredTransactions].sort((a, b) => {
       switch (sortBy) {
         case 'date-desc':
-          return new Date(b.date).getTime() - new Date(a.date).getTime();
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
         case 'date-asc':
-          return new Date(a.date).getTime() - new Date(b.date).getTime();
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
         case 'amount-desc':
           return b.amount - a.amount;
         case 'amount-asc':
@@ -205,7 +210,7 @@ export const TabbedTransactions: React.FC<TabbedTransactionsProps> = ({
         case 'name-asc':
           return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
         default:
-          return new Date(b.date).getTime() - new Date(a.date).getTime();
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       }
     });
 

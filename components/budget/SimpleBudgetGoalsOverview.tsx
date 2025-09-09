@@ -7,11 +7,15 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { BudgetManager } from './BudgetManager';
+import { BudgetTransactionsModal } from './BudgetTransactionsModal';
 import { GoalsManager } from '../goals/GoalsManager';
+import { GoalContributionsModal } from '../goals/GoalContributionsModal';
 import { CategoryBudgetProgress, GoalProgress } from '@/types';
 import { useCurrency } from '@/hooks/use-currency';
 import { Target, TrendingUp, Plus, AlertTriangle, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getBudgetTransactions, getGoalContributions, getGoalMilestones, calculateGoalProgressPercentage, calculateGoalRemainingAmount } from '@/lib/budget-goal-utils';
+import { startOfMonth, endOfMonth } from 'date-fns';
 
 interface SimpleBudgetGoalsOverviewProps {
   budgetProgress: CategoryBudgetProgress[];
@@ -27,6 +31,11 @@ interface SimpleBudgetGoalsOverviewProps {
   goals: any[];
   categoryBudgets: any[];
   onCreateCategory?: (category: any) => Promise<void>;
+  // Transaction data for modals
+  recurringExpenses: any[];
+  oneTimeExpenses: any[];
+  goalContributions: any[];
+  goalMilestones: any[];
 }
 
 export const SimpleBudgetGoalsOverview: React.FC<SimpleBudgetGoalsOverviewProps> = ({
@@ -42,11 +51,25 @@ export const SimpleBudgetGoalsOverview: React.FC<SimpleBudgetGoalsOverviewProps>
   categories,
   goals,
   categoryBudgets,
-  onCreateCategory
+  onCreateCategory,
+  recurringExpenses,
+  oneTimeExpenses,
+  goalContributions,
+  goalMilestones
 }) => {
   const { formatCurrency } = useCurrency();
   const [showBudgetManager, setShowBudgetManager] = useState(false);
   const [showGoalsManager, setShowGoalsManager] = useState(false);
+  const [selectedBudget, setSelectedBudget] = useState<CategoryBudgetProgress | null>(null);
+  const [selectedGoal, setSelectedGoal] = useState<GoalProgress | null>(null);
+  
+  // Debug logging
+  console.log('Selected goal state:', selectedGoal);
+  
+  // Get current month range
+  const now = new Date();
+  const monthStart = startOfMonth(now);
+  const monthEnd = endOfMonth(now);
 
   // Calculate summary stats
   const totalBudget = budgetProgress.reduce((sum, b) => sum + b.budgetLimit, 0);
@@ -149,6 +172,7 @@ export const SimpleBudgetGoalsOverview: React.FC<SimpleBudgetGoalsOverviewProps>
             />
           </DialogContent>
         </Dialog>
+
       </div>
     );
   }
@@ -208,7 +232,11 @@ export const SimpleBudgetGoalsOverview: React.FC<SimpleBudgetGoalsOverviewProps>
               {budgetProgress.length > 0 && (
                 <div className="space-y-3 max-h-64 overflow-y-auto">
                   {budgetProgress.slice(0, 2).map((budget) => (
-                    <div key={budget.categoryId} className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
+                    <div 
+                      key={budget.categoryId} 
+                      className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800/70 transition-colors duration-200"
+                      onClick={() => setSelectedBudget(budget)}
+                    >
                       {/* Budget Header */}
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -339,7 +367,14 @@ export const SimpleBudgetGoalsOverview: React.FC<SimpleBudgetGoalsOverviewProps>
               {goalsProgress.length > 0 && (
                 <div className="space-y-3 max-h-64 overflow-y-auto">
                   {goalsProgress.slice(0, 2).map((goalProgress) => (
-                    <div key={goalProgress.goal.id} className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
+                    <div 
+                      key={goalProgress.goal.id} 
+                      className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800/70 transition-colors duration-200"
+                      onClick={() => {
+                        console.log('Goal clicked:', goalProgress);
+                        setSelectedGoal(goalProgress);
+                      }}
+                    >
                       {/* Goal Header */}
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -502,6 +537,43 @@ export const SimpleBudgetGoalsOverview: React.FC<SimpleBudgetGoalsOverviewProps>
           />
         </DialogContent>
       </Dialog>
+
+      {/* Budget Transactions Modal */}
+      {selectedBudget && (
+        <BudgetTransactionsModal
+          isOpen={!!selectedBudget}
+          onClose={() => setSelectedBudget(null)}
+          categoryName={selectedBudget.categoryName}
+          categoryColor={selectedBudget.categoryColor}
+          budgetLimit={selectedBudget.budgetLimit}
+          currentSpent={selectedBudget.currentSpent}
+          remainingBudget={selectedBudget.remainingBudget}
+          progressPercentage={selectedBudget.progressPercentage}
+          isOverBudget={selectedBudget.isOverBudget}
+          transactions={getBudgetTransactions(
+            recurringExpenses,
+            oneTimeExpenses,
+            selectedBudget.categoryId,
+            monthStart,
+            monthEnd
+          )}
+          monthStart={monthStart}
+          monthEnd={monthEnd}
+        />
+      )}
+
+      {/* Goal Contributions Modal */}
+      {selectedGoal && (
+        <GoalContributionsModal
+          isOpen={!!selectedGoal}
+          onClose={() => setSelectedGoal(null)}
+          goal={selectedGoal.goal}
+          contributions={getGoalContributions(goalContributions, selectedGoal.goal.id)}
+          milestones={getGoalMilestones(goalMilestones, selectedGoal.goal.id)}
+          progressPercentage={calculateGoalProgressPercentage(selectedGoal.goal)}
+          remainingAmount={calculateGoalRemainingAmount(selectedGoal.goal)}
+        />
+      )}
     </div>
   );
 };

@@ -492,6 +492,10 @@ export const Dashboard: React.FC = () => {
           goals={data.savingsGoals || []}
           categoryBudgets={data.categoryBudgets || []}
           onCreateCategory={addCategory}
+          recurringExpenses={data.recurringExpenses}
+          oneTimeExpenses={data.oneTimeExpenses}
+          goalContributions={data.goalContributions || []}
+          goalMilestones={data.goalMilestones || []}
         />
         
         {/* Charts and Analytics */}
