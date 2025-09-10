@@ -54,7 +54,7 @@ export const presetIcons: PresetIcon[] = [
     name: 'Colruyt',
     category: 'food',
     domain: 'colruyt.be',
-    backgroundColor: '#009639'
+    backgroundColor: '#ffffff'
   },
   {
     id: 'carrefour-be',

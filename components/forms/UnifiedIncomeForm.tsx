@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { usePersistentForm } from '@/hooks/use-persistent-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -39,11 +40,10 @@ export const UnifiedIncomeForm: React.FC<UnifiedIncomeFormProps> = ({
     if (!recurringIncome && !oneTimeIncome) {
       if (currentTab === 'one-time' && newTab === 'recurring') {
         // Moving from one-time to recurring - sync common fields
-        setRecurringFormData(prev => ({
-          ...prev,
-          name: oneTimeFormData.name || prev.name,
-          amount: oneTimeFormData.amount || prev.amount,
-        }));
+        setRecurringFormData({
+          name: oneTimeFormData.name,
+          amount: oneTimeFormData.amount,
+        });
         setRecurringIconData(prev => ({
           ...prev,
           iconUrl: oneTimeIconData.iconUrl || prev.iconUrl,
@@ -55,11 +55,10 @@ export const UnifiedIncomeForm: React.FC<UnifiedIncomeFormProps> = ({
         }
       } else if (currentTab === 'recurring' && newTab === 'one-time') {
         // Moving from recurring to one-time - sync common fields
-        setOneTimeFormData(prev => ({
-          ...prev,
-          name: recurringFormData.name || prev.name,
-          amount: recurringFormData.amount || prev.amount,
-        }));
+        setOneTimeFormData({
+          name: recurringFormData.name,
+          amount: recurringFormData.amount,
+        });
         setOneTimeIconData(prev => ({
           ...prev,
           iconUrl: recurringIconData.iconUrl || prev.iconUrl,
@@ -75,19 +74,29 @@ export const UnifiedIncomeForm: React.FC<UnifiedIncomeFormProps> = ({
     setActiveTab(newTab);
   };
   
-  const [recurringFormData, setRecurringFormData] = useState({
-    name: recurringIncome?.name || '',
-    amount: recurringIncome?.amount?.toString() || '',
-    recurrence: recurringIncome?.recurrence || 'monthly' as RecurrenceType,
-    startDate: recurringIncome?.startDate || format(new Date(), 'yyyy-MM-dd'),
-    endDate: recurringIncome?.endDate || '',
+  // Use persistent form state for recurring income
+  const recurringPersistentForm = usePersistentForm({
+    key: 'income-form-recurring',
+    initialData: {
+      name: recurringIncome?.name || '',
+      amount: recurringIncome?.amount?.toString() || '',
+      recurrence: recurringIncome?.recurrence || 'monthly' as RecurrenceType,
+      startDate: recurringIncome?.startDate || format(new Date(), 'yyyy-MM-dd'),
+      endDate: recurringIncome?.endDate || '',
+    }
   });
+  const { formData: recurringFormData, updateFormData: setRecurringFormData, clearFormData: clearRecurringForm } = recurringPersistentForm;
 
-  const [oneTimeFormData, setOneTimeFormData] = useState({
-    name: oneTimeIncome?.name || '',
-    amount: oneTimeIncome?.amount?.toString() || '',
-    date: oneTimeIncome?.date || format(new Date(), 'yyyy-MM-dd'),
+  // Use persistent form state for one-time income
+  const oneTimePersistentForm = usePersistentForm({
+    key: 'income-form-onetime',
+    initialData: {
+      name: oneTimeIncome?.name || '',
+      amount: oneTimeIncome?.amount?.toString() || '',
+      date: oneTimeIncome?.date || format(new Date(), 'yyyy-MM-dd'),
+    }
   });
+  const { formData: oneTimeFormData, updateFormData: setOneTimeFormData, clearFormData: clearOneTimeForm } = oneTimePersistentForm;
 
   // Icon state management
   const [recurringIconData, setRecurringIconData] = useState({
@@ -136,6 +145,10 @@ export const UnifiedIncomeForm: React.FC<UnifiedIncomeFormProps> = ({
         }, recurringIconFile);
       }
 
+      // Clear persistent form data only when adding new entries (not editing)
+      if (!recurringIncome) {
+        clearRecurringForm();
+      }
       handleClose();
     } catch (error) {
       console.error('Error saving recurring income:', error);
@@ -170,6 +183,10 @@ export const UnifiedIncomeForm: React.FC<UnifiedIncomeFormProps> = ({
         }, oneTimeIconFile);
       }
 
+      // Clear persistent form data only when adding new entries (not editing)
+      if (!oneTimeIncome) {
+        clearOneTimeForm();
+      }
       handleClose();
     } catch (error) {
       console.error('Error saving one-time income:', error);
@@ -178,18 +195,15 @@ export const UnifiedIncomeForm: React.FC<UnifiedIncomeFormProps> = ({
 
   const handleClose = () => {
     setOpen(false);
-    setRecurringFormData({
-      name: '',
-      amount: '',
-      recurrence: 'monthly',
-      startDate: format(new Date(), 'yyyy-MM-dd'),
-      endDate: '',
-    });
-    setOneTimeFormData({
-      name: '',
-      amount: '',
-      date: format(new Date(), 'yyyy-MM-dd'),
-    });
+    // Don't clear form data on modal close - only clear on successful submission or explicit cancel
+    onClose?.();
+  };
+
+  // Clear form data when canceling (not just closing)
+  const handleCancel = () => {
+    clearRecurringForm();
+    clearOneTimeForm();
+    setOpen(false);
     onClose?.();
   };
 
@@ -250,7 +264,7 @@ export const UnifiedIncomeForm: React.FC<UnifiedIncomeFormProps> = ({
                   <Input
                     id="onetime-name"
                     value={oneTimeFormData.name}
-                    onChange={(e) => setOneTimeFormData({ ...oneTimeFormData, name: e.target.value })}
+                    onChange={(e) => setOneTimeFormData({ name: e.target.value })}
                     placeholder="e.g., Bonus"
                     required
                   />
@@ -263,7 +277,7 @@ export const UnifiedIncomeForm: React.FC<UnifiedIncomeFormProps> = ({
                     type="number"
                     step="0.01"
                     value={oneTimeFormData.amount}
-                    onChange={(e) => setOneTimeFormData({ ...oneTimeFormData, amount: e.target.value })}
+                    onChange={(e) => setOneTimeFormData({ amount: e.target.value })}
                     placeholder="0.00"
                     required
                   />
@@ -275,7 +289,7 @@ export const UnifiedIncomeForm: React.FC<UnifiedIncomeFormProps> = ({
                     id="onetime-date"
                     type="date"
                     value={oneTimeFormData.date}
-                    onChange={(e) => setOneTimeFormData({ ...oneTimeFormData, date: e.target.value })}
+                    onChange={(e) => setOneTimeFormData({ date: e.target.value })}
                     required
                   />
                 </div>
@@ -296,7 +310,7 @@ export const UnifiedIncomeForm: React.FC<UnifiedIncomeFormProps> = ({
                   <Button 
                     type="button" 
                     variant="outline" 
-                    onClick={() => setOpen(false)}
+                    onClick={handleCancel}
                   >
                     Cancel
                   </Button>
@@ -311,7 +325,7 @@ export const UnifiedIncomeForm: React.FC<UnifiedIncomeFormProps> = ({
                   <Input
                     id="recurring-name"
                     value={recurringFormData.name}
-                    onChange={(e) => setRecurringFormData({ ...recurringFormData, name: e.target.value })}
+                    onChange={(e) => setRecurringFormData({ name: e.target.value })}
                     placeholder="e.g., Salary"
                     required
                   />
@@ -324,7 +338,7 @@ export const UnifiedIncomeForm: React.FC<UnifiedIncomeFormProps> = ({
                     type="number"
                     step="0.01"
                     value={recurringFormData.amount}
-                    onChange={(e) => setRecurringFormData({ ...recurringFormData, amount: e.target.value })}
+                    onChange={(e) => setRecurringFormData({ amount: e.target.value })}
                     placeholder="0.00"
                     required
                   />
@@ -335,7 +349,7 @@ export const UnifiedIncomeForm: React.FC<UnifiedIncomeFormProps> = ({
                   <Select 
                     value={recurringFormData.recurrence} 
                     onValueChange={(value: RecurrenceType) => 
-                      setRecurringFormData({ ...recurringFormData, recurrence: value })
+                      setRecurringFormData({ recurrence: value })
                     }
                   >
                     <SelectTrigger>
@@ -355,7 +369,7 @@ export const UnifiedIncomeForm: React.FC<UnifiedIncomeFormProps> = ({
                     id="recurring-startDate"
                     type="date"
                     value={recurringFormData.startDate}
-                    onChange={(e) => setRecurringFormData({ ...recurringFormData, startDate: e.target.value })}
+                    onChange={(e) => setRecurringFormData({ startDate: e.target.value })}
                     required
                   />
                 </div>
@@ -366,7 +380,7 @@ export const UnifiedIncomeForm: React.FC<UnifiedIncomeFormProps> = ({
                     id="recurring-endDate"
                     type="date"
                     value={recurringFormData.endDate}
-                    onChange={(e) => setRecurringFormData({ ...recurringFormData, endDate: e.target.value })}
+                    onChange={(e) => setRecurringFormData({ endDate: e.target.value })}
                   />
                 </div>
 
@@ -386,7 +400,7 @@ export const UnifiedIncomeForm: React.FC<UnifiedIncomeFormProps> = ({
                   <Button 
                     type="button" 
                     variant="outline" 
-                    onClick={() => setOpen(false)}
+                    onClick={handleCancel}
                   >
                     Cancel
                   </Button>
@@ -401,7 +415,7 @@ export const UnifiedIncomeForm: React.FC<UnifiedIncomeFormProps> = ({
               <Input
                 id="edit-recurring-name"
                 value={recurringFormData.name}
-                onChange={(e) => setRecurringFormData({ ...recurringFormData, name: e.target.value })}
+                onChange={(e) => setRecurringFormData({ name: e.target.value })}
                 placeholder="e.g., Salary"
                 required
               />
@@ -414,7 +428,7 @@ export const UnifiedIncomeForm: React.FC<UnifiedIncomeFormProps> = ({
                 type="number"
                 step="0.01"
                 value={recurringFormData.amount}
-                onChange={(e) => setRecurringFormData({ ...recurringFormData, amount: e.target.value })}
+                onChange={(e) => setRecurringFormData({ amount: e.target.value })}
                 placeholder="0.00"
                 required
               />
@@ -425,7 +439,7 @@ export const UnifiedIncomeForm: React.FC<UnifiedIncomeFormProps> = ({
               <Select 
                 value={recurringFormData.recurrence} 
                 onValueChange={(value: RecurrenceType) => 
-                  setRecurringFormData({ ...recurringFormData, recurrence: value })
+                  setRecurringFormData({ recurrence: value })
                 }
               >
                 <SelectTrigger>
@@ -445,7 +459,7 @@ export const UnifiedIncomeForm: React.FC<UnifiedIncomeFormProps> = ({
                 id="edit-recurring-startDate"
                 type="date"
                 value={recurringFormData.startDate}
-                onChange={(e) => setRecurringFormData({ ...recurringFormData, startDate: e.target.value })}
+                onChange={(e) => setRecurringFormData({ startDate: e.target.value })}
                 required
               />
             </div>
@@ -456,7 +470,7 @@ export const UnifiedIncomeForm: React.FC<UnifiedIncomeFormProps> = ({
                 id="edit-recurring-endDate"
                 type="date"
                 value={recurringFormData.endDate}
-                onChange={(e) => setRecurringFormData({ ...recurringFormData, endDate: e.target.value })}
+                onChange={(e) => setRecurringFormData({ endDate: e.target.value })}
               />
             </div>
 
@@ -506,7 +520,7 @@ export const UnifiedIncomeForm: React.FC<UnifiedIncomeFormProps> = ({
               <Input
                 id="edit-onetime-name"
                 value={oneTimeFormData.name}
-                onChange={(e) => setOneTimeFormData({ ...oneTimeFormData, name: e.target.value })}
+                onChange={(e) => setOneTimeFormData({ name: e.target.value })}
                 placeholder="e.g., Bonus"
                 required
               />
@@ -519,7 +533,7 @@ export const UnifiedIncomeForm: React.FC<UnifiedIncomeFormProps> = ({
                 type="number"
                 step="0.01"
                 value={oneTimeFormData.amount}
-                onChange={(e) => setOneTimeFormData({ ...oneTimeFormData, amount: e.target.value })}
+                onChange={(e) => setOneTimeFormData({ amount: e.target.value })}
                 placeholder="0.00"
                 required
               />
@@ -531,7 +545,7 @@ export const UnifiedIncomeForm: React.FC<UnifiedIncomeFormProps> = ({
                 id="edit-onetime-date"
                 type="date"
                 value={oneTimeFormData.date}
-                onChange={(e) => setOneTimeFormData({ ...oneTimeFormData, date: e.target.value })}
+                onChange={(e) => setOneTimeFormData({ date: e.target.value })}
                 required
               />
             </div>
