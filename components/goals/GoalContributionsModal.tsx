@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { CurrencyInput } from '@/components/ui/currency-input';
 import { Textarea } from '@/components/ui/textarea';
 import { useCurrency } from '@/hooks/use-currency';
 import { format, differenceInDays } from 'date-fns';
@@ -307,14 +308,11 @@ export const GoalContributionsModal: React.FC<GoalContributionsModalProps> = ({
                     <label htmlFor="amount" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
                       Amount *
                     </label>
-                    <Input
+                    <CurrencyInput
                       id="amount"
-                      type="number"
-                      step="0.01"
-                      min="0"
                       placeholder="0.00"
                       value={contributionAmount}
-                      onChange={(e) => setContributionAmount(e.target.value)}
+                      onChange={(value) => setContributionAmount(value)}
                       className="w-full"
                       required
                     />

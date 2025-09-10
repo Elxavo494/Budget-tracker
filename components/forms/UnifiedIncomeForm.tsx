@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { CurrencyInput } from '@/components/ui/currency-input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -258,12 +259,10 @@ export const UnifiedIncomeForm: React.FC<UnifiedIncomeFormProps> = ({
                 
                 <div>
                   <Label htmlFor="onetime-amount">Amount (€)</Label>
-                  <Input
+                  <CurrencyInput
                     id="onetime-amount"
-                    type="number"
-                    step="0.01"
                     value={oneTimeFormData.amount}
-                    onChange={(e) => setOneTimeFormData({ ...oneTimeFormData, amount: e.target.value })}
+                    onChange={(value) => setOneTimeFormData({ ...oneTimeFormData, amount: value })}
                     placeholder="0.00"
                     required
                   />
@@ -319,12 +318,10 @@ export const UnifiedIncomeForm: React.FC<UnifiedIncomeFormProps> = ({
                 
                 <div>
                   <Label htmlFor="recurring-amount">Amount (€)</Label>
-                  <Input
+                  <CurrencyInput
                     id="recurring-amount"
-                    type="number"
-                    step="0.01"
                     value={recurringFormData.amount}
-                    onChange={(e) => setRecurringFormData({ ...recurringFormData, amount: e.target.value })}
+                    onChange={(value) => setRecurringFormData({ ...recurringFormData, amount: value })}
                     placeholder="0.00"
                     required
                   />
@@ -409,12 +406,10 @@ export const UnifiedIncomeForm: React.FC<UnifiedIncomeFormProps> = ({
             
             <div>
               <Label htmlFor="edit-recurring-amount">Amount (€)</Label>
-              <Input
+              <CurrencyInput
                 id="edit-recurring-amount"
-                type="number"
-                step="0.01"
                 value={recurringFormData.amount}
-                onChange={(e) => setRecurringFormData({ ...recurringFormData, amount: e.target.value })}
+                onChange={(value) => setRecurringFormData({ ...recurringFormData, amount: value })}
                 placeholder="0.00"
                 required
               />
@@ -514,12 +509,10 @@ export const UnifiedIncomeForm: React.FC<UnifiedIncomeFormProps> = ({
             
             <div>
               <Label htmlFor="edit-onetime-amount">Amount (€)</Label>
-              <Input
+              <CurrencyInput
                 id="edit-onetime-amount"
-                type="number"
-                step="0.01"
                 value={oneTimeFormData.amount}
-                onChange={(e) => setOneTimeFormData({ ...oneTimeFormData, amount: e.target.value })}
+                onChange={(value) => setOneTimeFormData({ ...oneTimeFormData, amount: value })}
                 placeholder="0.00"
                 required
               />

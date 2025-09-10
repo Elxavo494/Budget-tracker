@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { CurrencyInput } from '@/components/ui/currency-input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Plus, Edit } from 'lucide-react';
@@ -93,12 +94,10 @@ export const OneTimeIncomeForm: React.FC<OneTimeIncomeFormProps> = ({
           
           <div>
             <Label htmlFor="amount">Amount (€)</Label>
-            <Input
+            <CurrencyInput
               id="amount"
-              type="number"
-              step="0.01"
               value={formData.amount}
-              onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+              onChange={(value) => setFormData({ ...formData, amount: value })}
               placeholder="0.00"
               required
             />

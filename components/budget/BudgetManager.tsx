@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { CurrencyInput } from '@/components/ui/currency-input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
@@ -173,13 +174,10 @@ export const BudgetManager: React.FC<BudgetManagerProps> = ({
 
               <div className="space-y-2">
                 <Label htmlFor="monthlyLimit">Monthly Budget Limit</Label>
-                <Input
+                <CurrencyInput
                   id="monthlyLimit"
-                  type="number"
-                  step="0.01"
-                  min="0"
                   value={monthlyLimit}
-                  onChange={(e) => setMonthlyLimit(e.target.value)}
+                  onChange={(value) => setMonthlyLimit(value)}
                   placeholder="Enter amount"
                   required
                 />

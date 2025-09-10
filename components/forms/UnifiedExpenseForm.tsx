@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FloatingInput } from '@/components/ui/floating-input';
+import { FloatingCurrencyInput } from '@/components/ui/floating-currency-input';
 import { FloatingSelect } from '@/components/ui/floating-select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -363,13 +364,11 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
                     onChange={(e) => setOneTimeFormData({ ...oneTimeFormData, name: e.target.value })}
                     required
                   />
-                  <FloatingInput
+                  <FloatingCurrencyInput
                     id="onetime-amount"
                     label="Amount (€)"
-                    type="number"
-                    step="0.01"
                     value={oneTimeFormData.amount}
-                    onChange={(e) => setOneTimeFormData({ ...oneTimeFormData, amount: e.target.value })}
+                    onChange={(value) => setOneTimeFormData({ ...oneTimeFormData, amount: value })}
                     required
                   />
                   <div className="flex gap-2 items-end">
@@ -457,13 +456,11 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
                     onChange={(e) => setRecurringFormData({ ...recurringFormData, name: e.target.value })}
                     required
                   />
-                  <FloatingInput
+                  <FloatingCurrencyInput
                     id="recurring-amount"
                     label="Amount (€)"
-                    type="number"
-                    step="0.01"
                     value={recurringFormData.amount}
-                    onChange={(e) => setRecurringFormData({ ...recurringFormData, amount: e.target.value })}
+                    onChange={(value) => setRecurringFormData({ ...recurringFormData, amount: value })}
                     required
                   />
                   <div className="flex gap-2 items-end">
@@ -591,13 +588,11 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
                 required
               />
               
-              <FloatingInput
+              <FloatingCurrencyInput
                 id="edit-recurring-amount"
                 label="Amount (€)"
-                type="number"
-                step="0.01"
                 value={recurringFormData.amount}
-                onChange={(e) => setRecurringFormData({ ...recurringFormData, amount: e.target.value })}
+                onChange={(value) => setRecurringFormData({ ...recurringFormData, amount: value })}
                 required
               />
 
@@ -721,13 +716,11 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
                 required
               />
               
-              <FloatingInput
+              <FloatingCurrencyInput
                 id="edit-onetime-amount"
                 label="Amount (€)"
-                type="number"
-                step="0.01"
                 value={oneTimeFormData.amount}
-                onChange={(e) => setOneTimeFormData({ ...oneTimeFormData, amount: e.target.value })}
+                onChange={(value) => setOneTimeFormData({ ...oneTimeFormData, amount: value })}
                 required
               />
 

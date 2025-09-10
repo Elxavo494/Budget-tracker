@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { CurrencyInput } from '@/components/ui/currency-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -220,13 +221,10 @@ export const GoalsManager: React.FC<GoalsManagerProps> = ({
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="targetAmount">Target Amount</Label>
-                  <Input
+                  <CurrencyInput
                     id="targetAmount"
-                    type="number"
-                    step="0.01"
-                    min="0"
                     value={targetAmount}
-                    onChange={(e) => setTargetAmount(e.target.value)}
+                    onChange={(value) => setTargetAmount(value)}
                     placeholder="0.00"
                     required
                   />
