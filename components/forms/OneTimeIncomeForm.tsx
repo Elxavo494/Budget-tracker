@@ -90,7 +90,7 @@ export const OneTimeIncomeForm: React.FC<OneTimeIncomeFormProps> = ({
             <Input
               id="name"
               value={formData.name}
-              onChange={(e) => setFormData({ name: e.target.value }))
+              onChange={(e) => setFormData({ name: e.target.value })}
               placeholder="e.g., Bonus"
               required
             />
@@ -103,7 +103,7 @@ export const OneTimeIncomeForm: React.FC<OneTimeIncomeFormProps> = ({
               type="number"
               step="0.01"
               value={formData.amount}
-              onChange={(e) => setFormData({ amount: e.target.value }))
+              onChange={(e) => setFormData({ amount: e.target.value })}
               placeholder="0.00"
               required
             />
