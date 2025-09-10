@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { usePersistentForm } from '@/hooks/use-persistent-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -24,16 +23,11 @@ export const OneTimeIncomeForm: React.FC<OneTimeIncomeFormProps> = ({
 }) => {
   const { addOneTimeIncome, updateOneTimeIncome } = useSupabaseFinance();
   const [open, setOpen] = useState(false);
-  // Use persistent form state
-  const persistentForm = usePersistentForm({
-    key: 'onetime-income-form',
-    initialData: {
-      name: income?.name || '',
-      amount: income?.amount?.toString() || '',
-      date: income?.date || format(new Date(), 'yyyy-MM-dd'),
-    }
+  const [formData, setFormData] = useState({
+    name: income?.name || '',
+    amount: income?.amount?.toString() || '',
+    date: income?.date || format(new Date(), 'yyyy-MM-dd'),
   });
-  const { formData, updateFormData: setFormData, clearFormData } = persistentForm;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,10 +50,11 @@ export const OneTimeIncomeForm: React.FC<OneTimeIncomeFormProps> = ({
       }
 
       setOpen(false);
-      // Clear form data only when adding new entries (not editing)
-      if (!income) {
-        clearFormData();
-      }
+      setFormData({
+        name: '',
+        amount: '',
+        date: format(new Date(), 'yyyy-MM-dd'),
+      });
       onClose?.();
     } catch (error) {
       console.error('Error saving one-time income:', error);
@@ -90,7 +85,7 @@ export const OneTimeIncomeForm: React.FC<OneTimeIncomeFormProps> = ({
             <Input
               id="name"
               value={formData.name}
-              onChange={(e) => setFormData({ name: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder="e.g., Bonus"
               required
             />
@@ -103,7 +98,7 @@ export const OneTimeIncomeForm: React.FC<OneTimeIncomeFormProps> = ({
               type="number"
               step="0.01"
               value={formData.amount}
-              onChange={(e) => setFormData({ amount: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
               placeholder="0.00"
               required
             />
@@ -115,7 +110,7 @@ export const OneTimeIncomeForm: React.FC<OneTimeIncomeFormProps> = ({
               id="date"
               type="date"
               value={formData.date}
-              onChange={(e) => setFormData({ date: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
               required
             />
           </div>

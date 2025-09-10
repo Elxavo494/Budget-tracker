@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { usePersistentForm } from '@/hooks/use-persistent-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -26,18 +25,13 @@ export const OneTimeExpenseForm: React.FC<OneTimeExpenseFormProps> = ({
 }) => {
   const { data, addOneTimeExpense, updateOneTimeExpense } = useSupabaseFinance();
   const [open, setOpen] = useState(false);
-  // Use persistent form state
-  const persistentForm = usePersistentForm({
-    key: 'onetime-expense-form',
-    initialData: {
-      name: expense?.name || '',
-      amount: expense?.amount?.toString() || '',
-      categoryId: expense?.categoryId || '',
-      date: expense?.date || format(new Date(), 'yyyy-MM-dd'),
-      isMaaltijdcheques: expense?.isMaaltijdcheques || false,
-    }
+  const [formData, setFormData] = useState({
+    name: expense?.name || '',
+    amount: expense?.amount?.toString() || '',
+    categoryId: expense?.categoryId || '',
+    date: expense?.date || format(new Date(), 'yyyy-MM-dd'),
+    isMaaltijdcheques: expense?.isMaaltijdcheques || false,
   });
-  const { formData, updateFormData: setFormData, clearFormData } = persistentForm;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,10 +56,13 @@ export const OneTimeExpenseForm: React.FC<OneTimeExpenseFormProps> = ({
       }
 
       setOpen(false);
-      // Clear form data only when adding new entries (not editing)
-      if (!expense) {
-        clearFormData();
-      }
+      setFormData({
+        name: '',
+        amount: '',
+        categoryId: '',
+        date: format(new Date(), 'yyyy-MM-dd'),
+        isMaaltijdcheques: false,
+      });
       onClose?.();
     } catch (error) {
       console.error('Error saving one-time expense:', error);
@@ -96,7 +93,7 @@ export const OneTimeExpenseForm: React.FC<OneTimeExpenseFormProps> = ({
             <Input
               id="name"
               value={formData.name}
-              onChange={(e) => setFormData({ name: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder="e.g., Padel session"
               required
             />
@@ -109,7 +106,7 @@ export const OneTimeExpenseForm: React.FC<OneTimeExpenseFormProps> = ({
               type="number"
               step="0.01"
               value={formData.amount}
-              onChange={(e) => setFormData({ amount: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
               placeholder="0.00"
               required
             />
@@ -119,7 +116,7 @@ export const OneTimeExpenseForm: React.FC<OneTimeExpenseFormProps> = ({
             <Label>Category</Label>
             <Select 
               value={formData.categoryId} 
-              onValueChange={(value) => setFormData({ categoryId: value })}
+              onValueChange={(value) => setFormData({ ...formData, categoryId: value })}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select a category" />
@@ -139,7 +136,7 @@ export const OneTimeExpenseForm: React.FC<OneTimeExpenseFormProps> = ({
               id="maaltijdcheques"
               checked={formData.isMaaltijdcheques}
               onCheckedChange={(checked) => 
-                        setFormData({ isMaaltijdcheques: !!checked })
+                setFormData({ ...formData, isMaaltijdcheques: !!checked })
               }
             />
             <Label htmlFor="maaltijdcheques">Paid with Maaltijdcheques</Label>
@@ -151,7 +148,7 @@ export const OneTimeExpenseForm: React.FC<OneTimeExpenseFormProps> = ({
               id="date"
               type="date"
               value={formData.date}
-              onChange={(e) => setFormData({ date: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
               required
             />
           </div>

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { usePersistentForm } from '@/hooks/use-persistent-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -25,18 +24,13 @@ export const RecurringIncomeForm: React.FC<RecurringIncomeFormProps> = ({
 }) => {
   const { addRecurringIncome, updateRecurringIncome } = useSupabaseFinance();
   const [open, setOpen] = useState(false);
-  // Use persistent form state
-  const persistentForm = usePersistentForm({
-    key: 'recurring-income-form',
-    initialData: {
-      name: income?.name || '',
-      amount: income?.amount?.toString() || '',
-      recurrence: income?.recurrence || 'monthly' as RecurrenceType,
-      startDate: income?.startDate || format(new Date(), 'yyyy-MM-dd'),
-      endDate: income?.endDate || '',
-    }
+  const [formData, setFormData] = useState({
+    name: income?.name || '',
+    amount: income?.amount?.toString() || '',
+    recurrence: income?.recurrence || 'monthly' as RecurrenceType,
+    startDate: income?.startDate || format(new Date(), 'yyyy-MM-dd'),
+    endDate: income?.endDate || '',
   });
-  const { formData, updateFormData: setFormData, clearFormData } = persistentForm;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,10 +55,13 @@ export const RecurringIncomeForm: React.FC<RecurringIncomeFormProps> = ({
       }
 
       setOpen(false);
-      // Clear form data only when adding new entries (not editing)
-      if (!income) {
-        clearFormData();
-      }
+      setFormData({
+        name: '',
+        amount: '',
+        recurrence: 'monthly',
+        startDate: format(new Date(), 'yyyy-MM-dd'),
+        endDate: '',
+      });
       onClose?.();
     } catch (error) {
       console.error('Error saving recurring income:', error);
@@ -95,7 +92,7 @@ export const RecurringIncomeForm: React.FC<RecurringIncomeFormProps> = ({
             <Input
               id="name"
               value={formData.name}
-              onChange={(e) => setFormData({ name: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder="e.g., Salary"
               required
             />
@@ -108,7 +105,7 @@ export const RecurringIncomeForm: React.FC<RecurringIncomeFormProps> = ({
               type="number"
               step="0.01"
               value={formData.amount}
-              onChange={(e) => setFormData({ amount: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
               placeholder="0.00"
               required
             />
@@ -119,7 +116,7 @@ export const RecurringIncomeForm: React.FC<RecurringIncomeFormProps> = ({
             <Select 
               value={formData.recurrence} 
               onValueChange={(value: RecurrenceType) => 
-                setFormData({ recurrence: value })
+                setFormData({ ...formData, recurrence: value })
               }
             >
               <SelectTrigger>
@@ -139,7 +136,7 @@ export const RecurringIncomeForm: React.FC<RecurringIncomeFormProps> = ({
               id="startDate"
               type="date"
               value={formData.startDate}
-              onChange={(e) => setFormData({ startDate: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
               required
             />
           </div>
@@ -150,7 +147,7 @@ export const RecurringIncomeForm: React.FC<RecurringIncomeFormProps> = ({
               id="endDate"
               type="date"
               value={formData.endDate}
-              onChange={(e) => setFormData({ endDate: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
             />
           </div>
 

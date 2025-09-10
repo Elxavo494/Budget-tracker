@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { usePersistentForm } from '@/hooks/use-persistent-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -26,20 +25,15 @@ export const RecurringExpenseForm: React.FC<RecurringExpenseFormProps> = ({
 }) => {
   const { data, addRecurringExpense, updateRecurringExpense } = useSupabaseFinance();
   const [open, setOpen] = useState(false);
-  // Use persistent form state
-  const persistentForm = usePersistentForm({
-    key: 'recurring-expense-form',
-    initialData: {
-      name: expense?.name || '',
-      amount: expense?.amount?.toString() || '',
-      recurrence: expense?.recurrence || 'monthly' as RecurrenceType,
-      categoryId: expense?.categoryId || '',
-      startDate: expense?.startDate || format(new Date(), 'yyyy-MM-dd'),
-      endDate: expense?.endDate || '',
-      isMaaltijdcheques: expense?.isMaaltijdcheques || false,
-    }
+  const [formData, setFormData] = useState({
+    name: expense?.name || '',
+    amount: expense?.amount?.toString() || '',
+    recurrence: expense?.recurrence || 'monthly' as RecurrenceType,
+    categoryId: expense?.categoryId || '',
+    startDate: expense?.startDate || format(new Date(), 'yyyy-MM-dd'),
+    endDate: expense?.endDate || '',
+    isMaaltijdcheques: expense?.isMaaltijdcheques || false,
   });
-  const { formData, updateFormData: setFormData, clearFormData } = persistentForm;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,10 +60,15 @@ export const RecurringExpenseForm: React.FC<RecurringExpenseFormProps> = ({
       }
 
       setOpen(false);
-      // Clear form data only when adding new entries (not editing)
-      if (!expense) {
-        clearFormData();
-      }
+      setFormData({
+        name: '',
+        amount: '',
+        recurrence: 'monthly',
+        categoryId: '',
+        startDate: format(new Date(), 'yyyy-MM-dd'),
+        endDate: '',
+        isMaaltijdcheques: false,
+      });
       onClose?.();
     } catch (error) {
       console.error('Error saving recurring expense:', error);
@@ -100,7 +99,7 @@ export const RecurringExpenseForm: React.FC<RecurringExpenseFormProps> = ({
             <Input
               id="name"
               value={formData.name}
-              onChange={(e) => setFormData({ name: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder="e.g., House Loan"
               required
             />
@@ -113,7 +112,7 @@ export const RecurringExpenseForm: React.FC<RecurringExpenseFormProps> = ({
               type="number"
               step="0.01"
               value={formData.amount}
-              onChange={(e) => setFormData({ amount: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
               placeholder="0.00"
               required
             />
@@ -123,7 +122,7 @@ export const RecurringExpenseForm: React.FC<RecurringExpenseFormProps> = ({
             <Label>Category</Label>
             <Select 
               value={formData.categoryId} 
-              onValueChange={(value) => setFormData({ categoryId: value })}
+              onValueChange={(value) => setFormData({ ...formData, categoryId: value })}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select a category" />
@@ -143,7 +142,7 @@ export const RecurringExpenseForm: React.FC<RecurringExpenseFormProps> = ({
               id="maaltijdcheques"
               checked={formData.isMaaltijdcheques}
               onCheckedChange={(checked) => 
-                setFormData({ isMaaltijdcheques: !!checked })
+                setFormData({ ...formData, isMaaltijdcheques: !!checked })
               }
             />
             <Label htmlFor="maaltijdcheques">Paid with Maaltijdcheques</Label>
@@ -154,7 +153,7 @@ export const RecurringExpenseForm: React.FC<RecurringExpenseFormProps> = ({
             <Select 
               value={formData.recurrence} 
               onValueChange={(value: RecurrenceType) => 
-                setFormData({ recurrence: value })
+                setFormData({ ...formData, recurrence: value })
               }
             >
               <SelectTrigger>
@@ -174,7 +173,7 @@ export const RecurringExpenseForm: React.FC<RecurringExpenseFormProps> = ({
               id="startDate"
               type="date"
               value={formData.startDate}
-              onChange={(e) => setFormData({ startDate: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
               required
             />
           </div>
@@ -185,7 +184,7 @@ export const RecurringExpenseForm: React.FC<RecurringExpenseFormProps> = ({
               id="endDate"
               type="date"
               value={formData.endDate}
-              onChange={(e) => setFormData({ endDate: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
             />
           </div>
 

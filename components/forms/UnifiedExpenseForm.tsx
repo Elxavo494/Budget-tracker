@@ -1,8 +1,7 @@
 'use client';
 
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState } from 'react';
 import React from 'react';
-import { usePersistentForm } from '@/hooks/use-persistent-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -48,12 +47,13 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
     if (!recurringExpense && !oneTimeExpense) {
       if (currentTab === 'one-time' && newTab === 'recurring') {
         // Moving from one-time to recurring - sync common fields
-        setRecurringFormData({
-          name: oneTimeFormData.name,
-          amount: oneTimeFormData.amount,
-          categoryId: oneTimeFormData.categoryId,
+        setRecurringFormData(prev => ({
+          ...prev,
+          name: oneTimeFormData.name || prev.name,
+          amount: oneTimeFormData.amount || prev.amount,
+          categoryId: oneTimeFormData.categoryId || prev.categoryId,
           isMaaltijdcheques: oneTimeFormData.isMaaltijdcheques,
-        });
+        }));
         setRecurringIconData(prev => ({
           ...prev,
           iconUrl: oneTimeIconData.iconUrl || prev.iconUrl,
@@ -65,12 +65,13 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
         }
       } else if (currentTab === 'recurring' && newTab === 'one-time') {
         // Moving from recurring to one-time - sync common fields
-        setOneTimeFormData({
-          name: recurringFormData.name,
-          amount: recurringFormData.amount,
-          categoryId: recurringFormData.categoryId,
+        setOneTimeFormData(prev => ({
+          ...prev,
+          name: recurringFormData.name || prev.name,
+          amount: recurringFormData.amount || prev.amount,
+          categoryId: recurringFormData.categoryId || prev.categoryId,
           isMaaltijdcheques: recurringFormData.isMaaltijdcheques,
-        });
+        }));
         setOneTimeIconData(prev => ({
           ...prev,
           iconUrl: recurringIconData.iconUrl || prev.iconUrl,
@@ -88,33 +89,23 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isScanning, setIsScanning] = useState(false);
   
-  // Use persistent form state for recurring expenses
-  const recurringPersistentForm = usePersistentForm({
-    key: 'expense-form-recurring',
-    initialData: {
-      name: recurringExpense?.name || '',
-      amount: recurringExpense?.amount?.toString() || '',
-      recurrence: recurringExpense?.recurrence || 'monthly' as RecurrenceType,
-      categoryId: recurringExpense?.categoryId || '',
-      startDate: recurringExpense?.startDate || format(new Date(), 'yyyy-MM-dd'),
-      endDate: recurringExpense?.endDate || '',
-      isMaaltijdcheques: recurringExpense?.isMaaltijdcheques || false,
-    }
+  const [recurringFormData, setRecurringFormData] = useState({
+    name: recurringExpense?.name || '',
+    amount: recurringExpense?.amount?.toString() || '',
+    recurrence: recurringExpense?.recurrence || 'monthly' as RecurrenceType,
+    categoryId: recurringExpense?.categoryId || '',
+    startDate: recurringExpense?.startDate || format(new Date(), 'yyyy-MM-dd'),
+    endDate: recurringExpense?.endDate || '',
+    isMaaltijdcheques: recurringExpense?.isMaaltijdcheques || false,
   });
-  const { formData: recurringFormData, updateFormData: setRecurringFormData, clearFormData: clearRecurringForm } = recurringPersistentForm;
 
-  // Use persistent form state for one-time expenses
-  const oneTimePersistentForm = usePersistentForm({
-    key: 'expense-form-onetime',
-    initialData: {
-      name: oneTimeExpense?.name || '',
-      amount: oneTimeExpense?.amount?.toString() || '',
-      categoryId: oneTimeExpense?.categoryId || '',
-      date: oneTimeExpense?.date || format(new Date(), 'yyyy-MM-dd'),
-      isMaaltijdcheques: oneTimeExpense?.isMaaltijdcheques || false,
-    }
+  const [oneTimeFormData, setOneTimeFormData] = useState({
+    name: oneTimeExpense?.name || '',
+    amount: oneTimeExpense?.amount?.toString() || '',
+    categoryId: oneTimeExpense?.categoryId || '',
+    date: oneTimeExpense?.date || format(new Date(), 'yyyy-MM-dd'),
+    isMaaltijdcheques: oneTimeExpense?.isMaaltijdcheques || false,
   });
-  const { formData: oneTimeFormData, updateFormData: setOneTimeFormData, clearFormData: clearOneTimeForm } = oneTimePersistentForm;
 
   // Icon state management
   const [recurringIconData, setRecurringIconData] = useState({
@@ -144,15 +135,16 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
       // Name/merchant
       const merchant = result.merchant?.trim();
       if (activeTab === 'one-time') {
-        setOneTimeFormData({
-          name: merchant && (!oneTimeFormData.name || oneTimeFormData.name.length < 2) ? merchant : undefined,
-          amount: typeof result.total === 'number' ? String(result.total.toFixed(2)) : undefined,
-          date: result.date || undefined,
-        });
+        setOneTimeFormData(prev => ({
+          ...prev,
+          name: merchant && (!prev.name || prev.name.length < 2) ? merchant : prev.name,
+          amount: typeof result.total === 'number' ? String(result.total.toFixed(2)) : prev.amount,
+          date: result.date || prev.date,
+        }));
         // Category inference
         const suggested = suggestCategory(merchant || oneTimeFormData.name, data.categories);
         if (suggested) {
-          setOneTimeFormData({ categoryId: suggested.id });
+          setOneTimeFormData(prev => ({ ...prev, categoryId: suggested.id }));
         }
         // Icon inference
         const iconId = inferPresetIconId(merchant || oneTimeFormData.name);
@@ -160,14 +152,15 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
           setOneTimeIconData(prev => ({ ...prev, iconType: 'preset', presetIconId: iconId }));
         }
       } else {
-        setRecurringFormData({
-          name: merchant && (!recurringFormData.name || recurringFormData.name.length < 2) ? merchant : undefined,
-          amount: typeof result.total === 'number' ? String(result.total.toFixed(2)) : undefined,
-          startDate: result.date || undefined,
-        });
+        setRecurringFormData(prev => ({
+          ...prev,
+          name: merchant && (!prev.name || prev.name.length < 2) ? merchant : prev.name,
+          amount: typeof result.total === 'number' ? String(result.total.toFixed(2)) : prev.amount,
+          startDate: result.date || prev.startDate,
+        }));
         const suggested = suggestCategory(merchant || recurringFormData.name, data.categories);
         if (suggested) {
-          setRecurringFormData({ categoryId: suggested.id });
+          setRecurringFormData(prev => ({ ...prev, categoryId: suggested.id }));
         }
         const iconId = inferPresetIconId(merchant || recurringFormData.name);
         if (iconId) {
@@ -218,10 +211,6 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
         }, recurringIconFile);
       }
 
-      // Clear persistent form data only when adding new entries (not editing)
-      if (!recurringExpense) {
-        clearRecurringForm();
-      }
       handleClose();
     } catch (error) {
       console.error('Error saving recurring expense:', error);
@@ -261,10 +250,6 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
         }, oneTimeIconFile);
       }
 
-      // Clear persistent form data only when adding new entries (not editing)
-      if (!oneTimeExpense) {
-        clearOneTimeForm();
-      }
       handleClose();
     } catch (error) {
       console.error('Error saving one-time expense:', error);
@@ -274,15 +259,22 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
 
   const handleClose = () => {
     setOpen(false);
-    // Don't clear form data on modal close - only clear on successful submission or explicit cancel
-    onClose?.();
-  };
-
-  // Clear form data when canceling (not just closing)
-  const handleCancel = () => {
-    clearRecurringForm();
-    clearOneTimeForm();
-    setOpen(false);
+    setRecurringFormData({
+      name: '',
+      amount: '',
+      recurrence: 'monthly',
+      categoryId: '',
+      startDate: format(new Date(), 'yyyy-MM-dd'),
+      endDate: '',
+      isMaaltijdcheques: false,
+    });
+    setOneTimeFormData({
+      name: '',
+      amount: '',
+      categoryId: '',
+      date: format(new Date(), 'yyyy-MM-dd'),
+      isMaaltijdcheques: false,
+    });
     onClose?.();
   };
 
@@ -368,7 +360,7 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
                     id="onetime-name"
                     label="Name"
                     value={oneTimeFormData.name}
-                    onChange={(e) => setOneTimeFormData({ name: e.target.value })}
+                    onChange={(e) => setOneTimeFormData({ ...oneTimeFormData, name: e.target.value })}
                     required
                   />
                   <FloatingInput
@@ -377,7 +369,7 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
                     type="number"
                     step="0.01"
                     value={oneTimeFormData.amount}
-                    onChange={(e) => setOneTimeFormData({ amount: e.target.value })}
+                    onChange={(e) => setOneTimeFormData({ ...oneTimeFormData, amount: e.target.value })}
                     required
                   />
                   <div className="flex gap-2 items-end">
@@ -385,7 +377,7 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
                       <FloatingSelect
                         label="Category"
                         value={oneTimeFormData.categoryId}
-                        onValueChange={(value) => setOneTimeFormData({ categoryId: value })}
+                        onValueChange={(value) => setOneTimeFormData({ ...oneTimeFormData, categoryId: value })}
                       >
                         {data.categories.map((category) => (
                           <SelectItem key={category.id} value={category.id}>
@@ -411,7 +403,7 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
                       id="onetime-maaltijdcheques"
                       checked={oneTimeFormData.isMaaltijdcheques}
                       onCheckedChange={(checked) => 
-                        setOneTimeFormData({ isMaaltijdcheques: !!checked })
+                        setOneTimeFormData({ ...oneTimeFormData, isMaaltijdcheques: !!checked })
                       }
                     />
                     <Label htmlFor="onetime-maaltijdcheques">Paid with Maaltijdcheques</Label>
@@ -422,7 +414,7 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
                     label="Date"
                     type="date"
                     value={oneTimeFormData.date}
-                    onChange={(e) => setOneTimeFormData({ date: e.target.value })}
+                    onChange={(e) => setOneTimeFormData({ ...oneTimeFormData, date: e.target.value })}
                     required
                   />
                 </div>
@@ -440,7 +432,7 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
                   <Button 
                     type="button" 
                     variant="outline" 
-                    onClick={handleCancel}
+                    onClick={() => setOpen(false)}
                     className="w-full sm:w-auto h-12 sm:h-10 text-base sm:text-sm"
                   >
                     Cancel
@@ -462,7 +454,7 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
                     id="recurring-name"
                     label="Name"
                     value={recurringFormData.name}
-                    onChange={(e) => setRecurringFormData({ name: e.target.value })}
+                    onChange={(e) => setRecurringFormData({ ...recurringFormData, name: e.target.value })}
                     required
                   />
                   <FloatingInput
@@ -471,7 +463,7 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
                     type="number"
                     step="0.01"
                     value={recurringFormData.amount}
-                    onChange={(e) => setRecurringFormData({ amount: e.target.value })}
+                    onChange={(e) => setRecurringFormData({ ...recurringFormData, amount: e.target.value })}
                     required
                   />
                   <div className="flex gap-2 items-end">
@@ -479,7 +471,7 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
                       <FloatingSelect
                         label="Category"
                         value={recurringFormData.categoryId}
-                        onValueChange={(value) => setRecurringFormData({ categoryId: value })}
+                        onValueChange={(value) => setRecurringFormData({ ...recurringFormData, categoryId: value })}
                       >
                         {data.categories.map((category) => (
                           <SelectItem key={category.id} value={category.id}>
@@ -505,7 +497,7 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
                       id="recurring-maaltijdcheques"
                       checked={recurringFormData.isMaaltijdcheques}
                       onCheckedChange={(checked) => 
-                        setRecurringFormData({ isMaaltijdcheques: !!checked })
+                        setRecurringFormData({ ...recurringFormData, isMaaltijdcheques: !!checked })
                       }
                     />
                     <Label htmlFor="recurring-maaltijdcheques">Paid with Maaltijdcheques</Label>
@@ -515,7 +507,7 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
                     label="Recurrence"
                     value={recurringFormData.recurrence}
                     onValueChange={(value: string) => 
-                      setRecurringFormData({ recurrence: value as RecurrenceType })
+                      setRecurringFormData({ ...recurringFormData, recurrence: value as RecurrenceType })
                     }
                   >
                     <SelectItem value="weekly">Weekly</SelectItem>
@@ -527,7 +519,7 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
                     label="Start Date"
                     type="date"
                     value={recurringFormData.startDate}
-                    onChange={(e) => setRecurringFormData({ startDate: e.target.value })}
+                    onChange={(e) => setRecurringFormData({ ...recurringFormData, startDate: e.target.value })}
                     required
                   />
                   <FloatingInput
@@ -535,7 +527,7 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
                     label="End Date (Optional)"
                     type="date"
                     value={recurringFormData.endDate}
-                    onChange={(e) => setRecurringFormData({ endDate: e.target.value })}
+                    onChange={(e) => setRecurringFormData({ ...recurringFormData, endDate: e.target.value })}
                   />
                 </div>
 
@@ -573,7 +565,7 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
                   <Button 
                     type="button" 
                     variant="outline" 
-                    onClick={handleCancel}
+                    onClick={() => setOpen(false)}
                     className="w-full sm:w-auto h-12 sm:h-10 text-base sm:text-sm"
                   >
                     Cancel
@@ -595,7 +587,7 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
                 id="edit-recurring-name"
                 label="Name"
                 value={recurringFormData.name}
-                onChange={(e) => setRecurringFormData({ name: e.target.value })}
+                onChange={(e) => setRecurringFormData({ ...recurringFormData, name: e.target.value })}
                 required
               />
               
@@ -605,7 +597,7 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
                 type="number"
                 step="0.01"
                 value={recurringFormData.amount}
-                onChange={(e) => setRecurringFormData({ amount: e.target.value })}
+                onChange={(e) => setRecurringFormData({ ...recurringFormData, amount: e.target.value })}
                 required
               />
 
@@ -614,7 +606,7 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
                   <FloatingSelect
                     label="Category"
                     value={recurringFormData.categoryId}
-                    onValueChange={(value) => setRecurringFormData({ categoryId: value })}
+                    onValueChange={(value) => setRecurringFormData({ ...recurringFormData, categoryId: value })}
                   >
                     {data.categories.map((category) => (
                       <SelectItem key={category.id} value={category.id}>
@@ -640,7 +632,7 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
                   id="recurring-maaltijdcheques-2"
                   checked={recurringFormData.isMaaltijdcheques}
                   onCheckedChange={(checked) => 
-                    setRecurringFormData({ isMaaltijdcheques: !!checked })
+                    setRecurringFormData({ ...recurringFormData, isMaaltijdcheques: !!checked })
                   }
                 />
                 <Label htmlFor="recurring-maaltijdcheques-2">Paid with Maaltijdcheques</Label>
@@ -650,7 +642,7 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
                 label="Recurrence"
                 value={recurringFormData.recurrence}
                 onValueChange={(value: RecurrenceType) => 
-                  setRecurringFormData({ recurrence: value })
+                  setRecurringFormData({ ...recurringFormData, recurrence: value })
                 }
               >
                 <SelectItem value="weekly">Weekly</SelectItem>
@@ -663,7 +655,7 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
                 label="Start Date"
                 type="date"
                 value={recurringFormData.startDate}
-                onChange={(e) => setRecurringFormData({ startDate: e.target.value })}
+                onChange={(e) => setRecurringFormData({ ...recurringFormData, startDate: e.target.value })}
                 required
               />
 
@@ -672,7 +664,7 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
                 label="End Date (Optional)"
                 type="date"
                 value={recurringFormData.endDate}
-                onChange={(e) => setRecurringFormData({ endDate: e.target.value })}
+                onChange={(e) => setRecurringFormData({ ...recurringFormData, endDate: e.target.value })}
               />
             </div>
 
@@ -725,7 +717,7 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
                 id="edit-onetime-name"
                 label="Name"
                 value={oneTimeFormData.name}
-                onChange={(e) => setOneTimeFormData({ name: e.target.value })}
+                onChange={(e) => setOneTimeFormData({ ...oneTimeFormData, name: e.target.value })}
                 required
               />
               
@@ -735,7 +727,7 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
                 type="number"
                 step="0.01"
                 value={oneTimeFormData.amount}
-                onChange={(e) => setOneTimeFormData({ amount: e.target.value })}
+                onChange={(e) => setOneTimeFormData({ ...oneTimeFormData, amount: e.target.value })}
                 required
               />
 
@@ -744,7 +736,7 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
                   <FloatingSelect
                     label="Category"
                     value={oneTimeFormData.categoryId}
-                    onValueChange={(value) => setOneTimeFormData({ categoryId: value })}
+                    onValueChange={(value) => setOneTimeFormData({ ...oneTimeFormData, categoryId: value })}
                   >
                     {data.categories.map((category) => (
                       <SelectItem key={category.id} value={category.id}>
@@ -770,7 +762,7 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
                   id="edit-onetime-maaltijdcheques"
                   checked={oneTimeFormData.isMaaltijdcheques}
                   onCheckedChange={(checked) => 
-                    setOneTimeFormData({ isMaaltijdcheques: !!checked })
+                    setOneTimeFormData({ ...oneTimeFormData, isMaaltijdcheques: !!checked })
                   }
                 />
                 <Label htmlFor="edit-onetime-maaltijdcheques">Paid with Maaltijdcheques</Label>
@@ -781,7 +773,7 @@ export const UnifiedExpenseForm: React.FC<UnifiedExpenseFormProps> = ({
                 label="Date"
                 type="date"
                 value={oneTimeFormData.date}
-                onChange={(e) => setOneTimeFormData({ date: e.target.value })}
+                onChange={(e) => setOneTimeFormData({ ...oneTimeFormData, date: e.target.value })}
                 required
               />
             </div>
